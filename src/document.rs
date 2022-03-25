@@ -6,6 +6,7 @@ use std::path::Path;
 use uuid::Uuid;
 
 use sdl2::image::LoadSurface;
+use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::surface::Surface;
 
@@ -19,6 +20,7 @@ pub struct Document {
 }
 
 impl Document {
+    // TODO: allow for different colors every 5 squares
     fn create_surface(page_size: (u32, u32), sheet_path: &Path) -> Result<Surface, String> {
         let src = Surface::from_file(sheet_path)?;
         let mut surface = Surface::new(
@@ -29,38 +31,27 @@ impl Document {
 
         for i in 0..(page_size.1 as i32) {
             for j in 0..(page_size.0 as i32) {
+                let rect_size = if j != page_size.0 as i32 - 1 && i != page_size.1 as i32 - 1 {
+                    (SQUARE_SIZE + 1, SQUARE_SIZE + 1)
+                } else if i != page_size.1 as i32 - 1 {
+                    (SQUARE_SIZE, SQUARE_SIZE + 1)
+                } else if j != page_size.1 as i32 - 1 {
+                    (SQUARE_SIZE + 1, SQUARE_SIZE)
+                } else {
+                    (SQUARE_SIZE, SQUARE_SIZE)
+                };
                 src.blit(
-                    Rect::new(0, 0, SQUARE_SIZE + 1, SQUARE_SIZE + 1),
+                    Rect::new(0, 0, rect_size.0, rect_size.1),
                     &mut surface,
                     Rect::new(
-                        j * (SQUARE_SIZE as i32 + 1),
-                        i * (SQUARE_SIZE as i32 + 1),
-                        SQUARE_SIZE + 1,
-                        SQUARE_SIZE + 1,
+                        j * (SQUARE_SIZE as i32 + 1) + 1,
+                        i * (SQUARE_SIZE as i32 + 1) + 1,
+                        rect_size.0,
+                        rect_size.1,
                     ),
                 )?;
             }
-            src.blit(
-                Rect::new(0, 0, SQUARE_SIZE, SQUARE_SIZE + 1),
-                &mut surface,
-                Rect::new(
-                    (page_size.0 * (SQUARE_SIZE + 1) - SQUARE_SIZE) as i32,
-                    i * (SQUARE_SIZE as i32 + 1),
-                    SQUARE_SIZE,
-                    SQUARE_SIZE + 1,
-                ),
-            )?;
         }
-        src.blit(
-            Rect::new(0, 0, SQUARE_SIZE, SQUARE_SIZE),
-            &mut surface,
-            Rect::new(
-                (page_size.0 * (SQUARE_SIZE + 1) - SQUARE_SIZE) as i32,
-                (page_size.1 * (SQUARE_SIZE + 1) - SQUARE_SIZE) as i32,
-                SQUARE_SIZE,
-                SQUARE_SIZE,
-            ),
-        )?;
 
         Ok(surface)
     }
@@ -83,28 +74,33 @@ impl Document {
     }
 
     pub fn width(&self) -> u32 {
-        self.square_size * self.page_size.0
+        self.page_size.0 * (self.square_size + 1) - 1
     }
 
     pub fn height(&self) -> u32 {
-        self.square_size * self.page_size.1
+        self.page_size.1 * (self.square_size + 1) - 1
     }
 }
 
 impl Drawable for Document {
     fn draw<'r>(&self, renderer: &mut Renderer) -> Result<(), String> {
-        let size_in_pixels = (
-            self.page_size.0 * (self.square_size + 1) - 1,
-            self.page_size.1 * (self.square_size + 1) - 1,
-        );
+        renderer.draw_fill_rect(
+            Rect::new(
+                self.position.0 - 3,
+                self.position.1 - 3,
+                self.width() + 6,
+                self.height() + 6,
+            ),
+            Color::GRAY,
+        )?;
 
         let options = DrawOptions {
             src: None,
             dst: Some(Rect::new(
                 self.position.0,
                 self.position.1,
-                size_in_pixels.0,
-                size_in_pixels.1,
+                self.width(),
+                self.height(),
             )),
             rotation: None,
             flip_h: false,

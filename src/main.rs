@@ -10,10 +10,6 @@ use document::Document;
 use drawable::Drawable;
 use renderer::Renderer;
 
-use std::path::Path;
-use std::thread::sleep;
-use std::time::Duration;
-
 pub struct SdlContext {
     pub sdl: sdl2::Sdl,
     pub video_subsystem: sdl2::VideoSubsystem,
@@ -39,16 +35,7 @@ fn main() -> Result<(), String> {
     let sdl_context = SdlContext::init()?;
     let mut app = App::init(&sdl_context)?;
 
-    let mut renderer = app.renderer()?;
-    renderer.clear();
-    renderer.update();
-
-    let document = Document::new((20, 59), Path::new("assets/basic_sheet.png"), &mut renderer)?;
-    document.draw(&mut renderer)?;
-
-    renderer.update();
-
-    sleep(Duration::new(5, 0));
+    app.run()?;
 
     Ok(())
 }
