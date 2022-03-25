@@ -3,13 +3,13 @@ use crate::Renderer;
 use sdl2::rect::{Point, Rect};
 
 pub trait Drawable {
-    fn draw(&self, renderer: &Renderer) {}
+    fn draw(&self, renderer: &mut Renderer) -> Result<(), String>;
 }
 
-pub struct DrawableOptions {
+pub struct DrawOptions {
     pub src: Option<Rect>,
     pub dst: Option<Rect>,
-    pub rotation: (f64, Point),
+    pub rotation: Option<(f64, Point)>,
     pub flip_h: bool,
     pub flip_v: bool,
 }

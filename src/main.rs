@@ -1,11 +1,16 @@
 extern crate sdl2;
 
+pub mod app;
 pub mod document;
 pub mod drawable;
 pub mod renderer;
 
+use app::App;
+use document::Document;
+use drawable::Drawable;
 use renderer::Renderer;
 
+use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -32,12 +37,16 @@ impl SdlContext {
 
 fn main() -> Result<(), String> {
     let sdl_context = SdlContext::init()?;
+    let mut app = App::init(&sdl_context)?;
 
-    let mut renderer = Renderer::new(&sdl_context)?;
+    let mut renderer = app.renderer()?;
     renderer.clear();
     renderer.update();
 
-    println!("{:?}", renderer.dimensions());
+    let document = Document::new((20, 59), Path::new("assets/basic_sheet.png"), &mut renderer)?;
+    document.draw(&mut renderer)?;
+
+    renderer.update();
 
     sleep(Duration::new(5, 0));
 
