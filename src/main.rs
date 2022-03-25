@@ -1,6 +1,7 @@
 extern crate sdl2;
 
 pub mod document;
+pub mod drawable;
 pub mod renderer;
 
 use renderer::Renderer;

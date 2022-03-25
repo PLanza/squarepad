@@ -1,3 +1,4 @@
+use crate::drawable::Drawable;
 use crate::Renderer;
 
 use std::path::Path;
@@ -29,5 +30,19 @@ impl Document {
             square_size: SQUARE_SIZE,
             texture_id,
         })
+    }
+
+    pub fn width(&self) -> u32 {
+        self.square_size * self.page_size.0
+    }
+
+    pub fn height(&self) -> u32 {
+        self.square_size * self.page_size.1
+    }
+}
+
+impl Drawable for Document {
+    fn draw(&self, renderer: &Renderer) {
+        
     }
 }

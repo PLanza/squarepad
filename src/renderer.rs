@@ -1,3 +1,4 @@
+use crate::drawable::DrawableOptions;
 use crate::SdlContext;
 
 use sdl2::pixels::Color;
@@ -48,6 +49,30 @@ impl<'r> Renderer<'r> {
         self.textures.insert(id, texture);
 
         Ok(id)
+    }
+
+    pub fn draw_texture(
+        &'r mut self,
+        texture_id: Uuid,
+        options: DrawableOptions,
+    ) -> Result<(), String> {
+        let texture;
+        match self.textures.get(&texture_id) {
+            Some(t) => texture = t,
+            None => return Err("Texture not found".to_string()),
+        }
+
+        self.canvas.copy_ex(
+            texture,
+            options.src,
+            options.dst,
+            options.rotation.0,
+            options.rotation.1,
+            options.flip_h,
+            options.flip_v,
+        )?;
+
+        Ok(())
     }
 
     // For testing purposes
