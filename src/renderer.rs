@@ -1,16 +1,21 @@
 use crate::SdlContext;
 
 use sdl2::pixels::Color;
-use sdl2::render::{TextureCreator, WindowCanvas};
+use sdl2::render::{Texture, TextureCreator, WindowCanvas};
+use sdl2::surface::Surface;
 use sdl2::video::WindowContext;
 
-pub struct Renderer {
+use std::collections::HashMap;
+
+use uuid::Uuid;
+
+pub struct Renderer<'r> {
     canvas: WindowCanvas,
     tex_creator: TextureCreator<WindowContext>,
-    //tex_holder : TextureHolder
+    textures: HashMap<Uuid, Texture<'r>>,
 }
 
-impl Renderer {
+impl<'r> Renderer<'r> {
     // Only one Renderer will ever be constructed. The default settings set the window to be
     // maximized to the default display, allowing the window to be resized.
     pub(super) fn new(sdl_context: &SdlContext) -> Result<Renderer, String> {
@@ -31,7 +36,18 @@ impl Renderer {
         Ok(Renderer {
             canvas,
             tex_creator,
+            textures: HashMap::new(),
         })
+    }
+
+    pub(crate) fn create_texture(&'r mut self, surface: &Surface) -> Result<Uuid, String> {
+        let texture =
+            Texture::from_surface(surface, &self.tex_creator).map_err(|e| e.to_string())?;
+        let id = Uuid::new_v4();
+
+        self.textures.insert(id, texture);
+
+        Ok(id)
     }
 
     // For testing purposes
