@@ -1,14 +1,11 @@
 extern crate sdl2;
 
 pub mod app;
-pub mod document;
 pub mod drawable;
+pub mod pages;
 pub mod renderer;
 
 use app::App;
-use document::Document;
-use drawable::Drawable;
-use renderer::Renderer;
 
 pub struct SdlContext {
     pub sdl: sdl2::Sdl,

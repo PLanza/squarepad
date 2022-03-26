@@ -1,6 +1,6 @@
-use crate::Document;
-use crate::Drawable;
-use crate::Renderer;
+use crate::drawable::Drawable;
+use crate::pages::Pages;
+use crate::renderer::Renderer;
 use crate::SdlContext;
 
 use std::path::Path;
@@ -41,15 +41,12 @@ impl App {
         })
     }
 
-    // TODO: add startup function that creates document and renderer,
-    // setting the appropriate world size.
-
     pub fn run(&mut self) -> Result<(), String> {
         let mut renderer = Renderer::new(&mut self.canvas, &self.tex_creator);
         renderer.clear();
         renderer.update();
 
-        let document = Document::new((42, 59), Path::new("assets/basic_sheet.png"), &mut renderer)?;
+        let pages = Pages::new((42, 59), Path::new("assets/basic_sheet.png"), &mut renderer)?;
 
         'main: loop {
             for event in self.event_pump.poll_iter() {
@@ -61,7 +58,7 @@ impl App {
             }
 
             renderer.clear();
-            document.draw(&mut renderer)?;
+            pages.draw(&mut renderer)?;
             renderer.update();
         }
 

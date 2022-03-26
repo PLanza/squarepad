@@ -1,4 +1,4 @@
-use crate::Renderer;
+use crate::renderer::Renderer;
 
 use sdl2::rect::{Point, Rect};
 

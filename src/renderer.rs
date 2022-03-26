@@ -24,7 +24,7 @@ impl<'c, 't> Renderer<'c, 't> {
         canvas: &'c mut WindowCanvas,
         tex_creator: &'t TextureCreator<WindowContext>,
     ) -> Renderer<'c, 't> {
-        let camera = Rect::new(0, -100, canvas.window().size().0, canvas.window().size().1);
+        let camera = Rect::new(0, -200, canvas.window().size().0, canvas.window().size().1);
         Renderer {
             canvas,
             tex_creator,
