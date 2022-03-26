@@ -12,4 +12,5 @@ pub struct DrawOptions {
     pub rotation: Option<(f64, Point)>,
     pub flip_h: bool,
     pub flip_v: bool,
+    pub on_world: bool,
 }

@@ -21,8 +21,8 @@ pub struct Pages {
 
 impl Pages {
     // Create the page surface given a sheet image and a page size
-    fn create_surface(page_size: (u32, u32), sheet_path: &Path) -> Result<Surface, String> {
-        let src = Surface::from_file(sheet_path)?;
+    fn create_surface(page_size: (u32, u32), image_path: &Path) -> Result<Surface, String> {
+        let src = Surface::from_file(image_path)?;
         let mut surface = Surface::new(
             (SQUARE_SIZE + 1) * page_size.0 - 1,
             (SQUARE_SIZE + 1) * page_size.1 - 1,
@@ -68,12 +68,14 @@ impl Pages {
 
     pub fn new<'r>(
         page_size: (u32, u32),
-        sheet_path: &Path,
+        image_path: &Path,
         renderer: &mut Renderer,
     ) -> Result<Pages, String> {
         let x = ((renderer.dimensions().0 / 2) - (page_size.0 * SQUARE_SIZE / 2)) as i32;
-        let surface = Pages::create_surface(page_size, sheet_path)?;
-        let id = renderer.create_texture(&surface)?;
+        let surface = Pages::create_surface(page_size, image_path)?;
+        let id = Uuid::new_v4();
+
+        renderer.create_texture(id, vec![&surface])?;
 
         Ok(Pages {
             position: (x, 0),
@@ -102,6 +104,7 @@ impl Drawable for Pages {
                 self.height() + 6,
             ),
             Color::GRAY,
+            true,
         )?;
 
         let options = DrawOptions {
@@ -115,8 +118,9 @@ impl Drawable for Pages {
             rotation: None,
             flip_h: false,
             flip_v: false,
+            on_world: true,
         };
 
-        renderer.draw_texture(self.id, options)
+        renderer.draw_texture(self.id, 0, options)
     }
 }

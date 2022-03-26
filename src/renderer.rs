@@ -13,7 +13,7 @@ use uuid::Uuid;
 pub struct Renderer<'c, 't> {
     canvas: &'c mut WindowCanvas,
     tex_creator: &'t TextureCreator<WindowContext>,
-    textures: HashMap<Uuid, Texture<'t>>,
+    textures: HashMap<Uuid, Vec<Texture<'t>>>,
     camera: Rect,
 }
 
@@ -33,14 +33,22 @@ impl<'c, 't> Renderer<'c, 't> {
         }
     }
 
-    pub(crate) fn create_texture(&mut self, surface: &Surface) -> Result<Uuid, String> {
-        let texture =
-            Texture::from_surface(surface, &self.tex_creator).map_err(|e| e.to_string())?;
-        let id = Uuid::new_v4();
+    pub(crate) fn create_texture(
+        &mut self,
+        id: Uuid,
+        surfaces: Vec<&Surface>,
+    ) -> Result<(), String> {
+        let mut textures = Vec::new();
+        for surface in surfaces {
+            let texture =
+                Texture::from_surface(surface, &self.tex_creator).map_err(|e| e.to_string())?;
 
-        self.textures.insert(id, texture);
+            textures.push(texture);
+        }
 
-        Ok(id)
+        self.textures.insert(id, textures);
+
+        Ok(())
     }
 
     fn world_to_screen(&self, rect: Rect) -> Rect {
@@ -79,21 +87,32 @@ impl<'c, 't> Renderer<'c, 't> {
         )
     }
 
-    pub fn draw_texture(&mut self, texture_id: Uuid, options: DrawOptions) -> Result<(), String> {
-        let texture;
-        match self.textures.get(&texture_id) {
-            Some(t) => texture = t,
+    pub fn draw_texture(
+        &mut self,
+        object_id: Uuid,
+        index: usize,
+        options: DrawOptions,
+    ) -> Result<(), String> {
+        let textures;
+        match self.textures.get(&object_id) {
+            Some(t) => textures = t,
             None => return Err("Texture not found".to_string()),
         }
 
         // Convert from world to screen coordinates
         let dst = match options.dst {
             None => None,
-            Some(rect) => Some(self.world_to_screen(rect)),
+            Some(rect) => {
+                if options.on_world {
+                    Some(self.world_to_screen(rect))
+                } else {
+                    Some(rect)
+                }
+            }
         };
 
         self.canvas.copy_ex(
-            texture,
+            &textures[index],
             options.src,
             dst,
             match options.rotation {
@@ -111,9 +130,30 @@ impl<'c, 't> Renderer<'c, 't> {
         Ok(())
     }
 
-    pub fn draw_fill_rect(&mut self, rect: Rect, color: Color) -> Result<(), String> {
+    pub fn draw_line(
+        &mut self,
+        start: (i32, i32),
+        end: (i32, i32),
+        color: Color,
+    ) -> Result<(), String> {
         self.canvas.set_draw_color(color);
-        self.canvas.fill_rect(self.world_to_screen(rect))?;
+        self.canvas.draw_line(start, end)?;
+        Ok(())
+    }
+
+    pub fn draw_fill_rect(
+        &mut self,
+        rect: Rect,
+        color: Color,
+        on_world: bool,
+    ) -> Result<(), String> {
+        self.canvas.set_draw_color(color);
+        if on_world {
+            self.canvas.fill_rect(self.world_to_screen(rect))?;
+        } else {
+            self.canvas.fill_rect(rect)?;
+        }
+
         Ok(())
     }
 }
