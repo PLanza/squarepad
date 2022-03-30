@@ -6,7 +6,9 @@ use sdl2::render::{Texture, TextureCreator, WindowCanvas};
 use sdl2::surface::Surface;
 use sdl2::video::WindowContext;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use uuid::Uuid;
 
@@ -23,14 +25,15 @@ impl<'c, 't> Renderer<'c, 't> {
     pub(super) fn new(
         canvas: &'c mut WindowCanvas,
         tex_creator: &'t TextureCreator<WindowContext>,
-    ) -> Renderer<'c, 't> {
+    ) -> Rc<RefCell<Renderer<'c, 't>>> {
         let camera = Rect::new(0, -200, canvas.window().size().0, canvas.window().size().1);
-        Renderer {
+
+        Rc::new(RefCell::new(Renderer {
             canvas,
             tex_creator,
             textures: HashMap::new(),
             camera,
-        }
+        }))
     }
 
     pub(crate) fn create_texture(

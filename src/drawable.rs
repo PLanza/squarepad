@@ -2,8 +2,11 @@ use crate::renderer::Renderer;
 
 use sdl2::rect::{Point, Rect};
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 pub trait Drawable {
-    fn draw(&self, renderer: &mut Renderer) -> Result<(), String>;
+    fn draw(&self, renderer: Rc<RefCell<Renderer>>) -> Result<(), String>;
 }
 
 pub struct DrawOptions {
