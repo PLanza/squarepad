@@ -9,6 +9,7 @@ pub trait Drawable {
     fn draw(&self, renderer: Rc<RefCell<Renderer>>) -> Result<(), String>;
 }
 
+#[derive(Debug)]
 pub struct DrawOptions {
     pub src: Option<Rect>,
     pub dst: Option<Rect>,

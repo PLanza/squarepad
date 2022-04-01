@@ -72,19 +72,15 @@ impl<'b> Button<'b> {
         self.on_click = on_click;
     }
 
-    fn lies_within(&self, x: i32, y: i32) -> bool {
-        if x >= self.rect.x && x < self.rect.x + self.rect.w {
-            if y >= self.rect.y && y < self.rect.y + self.rect.h {
-                return true;
-            }
-        }
-        false
+    pub fn set_position(&mut self, position: (i32, i32)) {
+        self.rect = Rect::new(position.0, position.1, self.width(), self.height())
     }
 
     pub fn handle_event(&mut self, e: &Event) -> Result<(), String> {
         match e {
             Event::MouseMotion { x, y, .. } => {
-                if self.lies_within(*x, *y) && !matches!(self.state, ButtonState::CLICKED) {
+                if self.rect.contains_point((*x, *y)) && !matches!(self.state, ButtonState::CLICKED)
+                {
                     self.state = ButtonState::HOVER;
                 } else if !self.rect.contains_point((*x, *y))
                     && !matches!(self.state, ButtonState::CLICKED)
@@ -94,13 +90,13 @@ impl<'b> Button<'b> {
                 Ok(())
             }
             Event::MouseButtonDown { x, y, .. } => {
-                if self.lies_within(*x, *y) {
+                if self.rect.contains_point((*x, *y)) {
                     self.state = ButtonState::CLICKED;
                 }
                 Ok(())
             }
             Event::MouseButtonUp { x, y, .. } => {
-                if self.lies_within(*x, *y) {
+                if self.rect.contains_point((*x, *y)) {
                     self.state = ButtonState::HOVER;
                     self.toggled = !self.toggled;
                     ((&*self).on_click)(self)

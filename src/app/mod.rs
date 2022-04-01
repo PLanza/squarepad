@@ -29,9 +29,9 @@ impl App {
         let window = sdl_context
             .video_subsystem
             .window("SquarePad", display_bounds.width(), display_bounds.height())
+            .resizable()
             .maximized()
             .position_centered()
-            .resizable()
             .build()
             .map_err(|e| e.to_string())?;
 
@@ -48,7 +48,12 @@ impl App {
         })
     }
 
-    fn setup<'r>(renderer: Rc<RefCell<Renderer<'r, 'r>>>) -> Result<AppComponents<'r>, String> {
+    fn setup<'r>(
+        canvas: &'r mut WindowCanvas,
+        tex_creator: &'r TextureCreator<WindowContext>,
+    ) -> Result<(Rc<RefCell<Renderer<'r, 'r>>>, AppComponents<'r>), String> {
+        let renderer = Renderer::new(canvas, tex_creator);
+
         let pages = Rc::new(RefCell::new(Pages::new(
             (42, 59),
             Path::new("assets/white_squared.png"),
@@ -61,7 +66,7 @@ impl App {
         let mut page_style_button = Button::new(
             (30, button_y),
             Path::new("assets/page_style_button.png"),
-            renderer,
+            Rc::clone(&renderer),
             Rc::clone(&pages),
         )?;
 
@@ -81,15 +86,13 @@ impl App {
 
         buttons.push(page_style_button);
 
-        Ok(AppComponents { pages, buttons })
+        Ok((renderer, AppComponents { pages, buttons }))
     }
 
     pub fn run(&mut self) -> Result<(), String> {
-        let renderer = Renderer::new(&mut self.canvas, &self.tex_creator);
+        let (renderer, mut ac) = App::setup(&mut self.canvas, &self.tex_creator)?;
         renderer.borrow_mut().clear();
         renderer.borrow_mut().update();
-
-        let mut ac = App::setup(Rc::clone(&renderer))?;
 
         'main: loop {
             for event in self.event_pump.poll_iter() {
