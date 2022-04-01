@@ -1,9 +1,7 @@
 use crate::drawable::{DrawOptions, Drawable};
 use crate::renderer::Renderer;
 
-use std::cell::RefCell;
 use std::path::Path;
-use std::rc::Rc;
 
 use uuid::Uuid;
 
@@ -14,15 +12,34 @@ use sdl2::surface::Surface;
 
 const SQUARE_SIZE: u32 = 30; // In pixels squared
 
-pub struct Pages<'p> {
+#[derive(Clone, Copy)]
+pub enum PageStyle {
+    WhiteSquared = 0,
+    WhitePlain = 1,
+    BeigeSquared = 2,
+    BeigePlain = 3,
+}
+
+impl PageStyle {
+    pub fn path(&self) -> &Path {
+        Path::new(match *self {
+            PageStyle::WhiteSquared => "assets/white_squared.png",
+            PageStyle::WhitePlain => "assets/white_plain.png",
+            PageStyle::BeigeSquared => "assets/beige_squared.png",
+            PageStyle::BeigePlain => "assets/beige_plain.png",
+        })
+    }
+}
+
+pub struct Pages {
     pub id: Uuid,
     position: (i32, i32),
     page_size: (u32, u32), // In number of squares, 30 x 42
     square_size: u32,
-    renderer: Rc<RefCell<Renderer<'p, 'p>>>,
+    style: PageStyle,
 }
 
-impl<'p> Pages<'p> {
+impl Pages {
     // Create the page surface given a sheet image and a page size
     fn create_surface(page_size: (u32, u32), image_path: &Path) -> Result<Surface, String> {
         let src = Surface::from_file(image_path)?;
@@ -69,23 +86,32 @@ impl<'p> Pages<'p> {
         Ok(surface)
     }
 
-    pub fn new<'r>(
-        page_size: (u32, u32),
-        image_path: &Path,
-        renderer: Rc<RefCell<Renderer<'p, 'p>>>,
-    ) -> Result<Pages<'p>, String> {
-        let x = ((renderer.borrow().dimensions().0 / 2) - (page_size.0 * SQUARE_SIZE / 2)) as i32;
-        let surface = Pages::create_surface(page_size, image_path)?;
+    pub fn new(page_size: (u32, u32), renderer: &mut Renderer) -> Result<Pages, String> {
+        let x = ((renderer.dimensions().0 / 2) - (page_size.0 * SQUARE_SIZE / 2)) as i32;
+
+        let white_squared_sfc = Pages::create_surface(page_size, PageStyle::WhiteSquared.path())?;
+        let white_plain_sfc = Pages::create_surface(page_size, PageStyle::WhitePlain.path())?;
+        let beige_squared_sfc = Pages::create_surface(page_size, PageStyle::BeigeSquared.path())?;
+        let beige_plain_sfc = Pages::create_surface(page_size, PageStyle::BeigePlain.path())?;
+
         let id = Uuid::new_v4();
 
-        renderer.borrow_mut().create_texture(id, vec![&surface])?;
+        renderer.create_texture(
+            id,
+            vec![
+                &white_squared_sfc,
+                &white_plain_sfc,
+                &beige_squared_sfc,
+                &beige_plain_sfc,
+            ],
+        )?;
 
         Ok(Pages {
             position: (x, 0),
             page_size,
             square_size: SQUARE_SIZE,
             id,
-            renderer,
+            style: PageStyle::WhiteSquared,
         })
     }
 
@@ -97,20 +123,18 @@ impl<'p> Pages<'p> {
         self.page_size.1 * (self.square_size + 1) - 1
     }
 
-    pub fn change_page_style(&self, image_path: &Path) -> Result<(), String> {
-        let surface = Pages::create_surface(self.page_size, image_path)?;
+    pub fn style(&self) -> PageStyle {
+        self.style
+    }
 
-        self.renderer
-            .borrow_mut()
-            .create_texture(self.id, vec![&surface])?;
-
-        Ok(())
+    pub fn set_style(&mut self, style: PageStyle) {
+        self.style = style
     }
 }
 
-impl<'p> Drawable for Pages<'p> {
-    fn draw(&self, renderer: Rc<RefCell<Renderer>>) -> Result<(), String> {
-        renderer.borrow_mut().draw_fill_rect(
+impl Drawable for Pages {
+    fn draw(&self, renderer: &mut Renderer) -> Result<(), String> {
+        renderer.draw_fill_rect(
             Rect::new(
                 self.position.0 - 3,
                 self.position.1 - 3,
@@ -135,6 +159,6 @@ impl<'p> Drawable for Pages<'p> {
             on_world: true,
         };
 
-        renderer.borrow_mut().draw_texture(self.id, 0, options)
+        renderer.draw_texture(self.id, self.style as usize, options)
     }
 }

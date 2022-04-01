@@ -1,7 +1,9 @@
 pub mod button;
+pub mod menu;
 pub mod pages;
 
 use self::button::Button;
+use self::pages::PageStyle;
 use self::pages::Pages;
 use crate::drawable::Drawable;
 use crate::renderer::Renderer;
@@ -48,57 +50,71 @@ impl App {
         })
     }
 
-    fn setup<'r>(
-        canvas: &'r mut WindowCanvas,
-        tex_creator: &'r TextureCreator<WindowContext>,
-    ) -> Result<(Rc<RefCell<Renderer<'r, 'r>>>, AppComponents<'r>), String> {
-        let renderer = Renderer::new(canvas, tex_creator);
+    // Sets up the renderer and all the application's UI components
+    fn setup<'c, 't>(
+        canvas: &'c mut WindowCanvas,
+        tex_creator: &'t TextureCreator<WindowContext>,
+    ) -> Result<(Renderer<'c, 't>, AppComponents), String> {
+        let mut renderer = Renderer::new(canvas, tex_creator);
 
-        let pages = Rc::new(RefCell::new(Pages::new(
-            (42, 59),
-            Path::new("assets/white_squared.png"),
-            Rc::clone(&renderer),
-        )?));
+        let pages = Rc::new(RefCell::new(Pages::new((42, 59), &mut renderer)?));
 
         let mut buttons = Vec::new();
 
-        let button_y = renderer.borrow().dimensions().1 as i32 - 30;
+        let button_y = renderer.dimensions().1 as i32 - 90;
         let mut page_style_button = Button::new(
             (30, button_y),
             Path::new("assets/page_style_button.png"),
-            Rc::clone(&renderer),
+            &mut renderer,
             Rc::clone(&pages),
         )?;
 
         page_style_button.set_on_click(Box::new(|button: &Button| {
-            if button.is_toggled() {
-                button
-                    .pages
-                    .borrow()
-                    .change_page_style(Path::new("assets/beige_squared.png"))
-            } else {
-                button
-                    .pages
-                    .borrow()
-                    .change_page_style(Path::new("assets/white_squared.png"))
-            }
-        }));
+            let mut pages = button.pages.borrow_mut();
 
+            match pages.style() {
+                PageStyle::WhiteSquared => pages.set_style(PageStyle::BeigeSquared),
+                PageStyle::WhitePlain => pages.set_style(PageStyle::BeigePlain),
+                PageStyle::BeigeSquared => pages.set_style(PageStyle::WhiteSquared),
+                PageStyle::BeigePlain => pages.set_style(PageStyle::WhitePlain),
+            }
+
+            Ok(())
+        }));
         buttons.push(page_style_button);
+
+        let mut grid_toggle_button = Button::new(
+            (90, button_y),
+            Path::new("assets/grid_toggle_button.png"),
+            &mut renderer,
+            Rc::clone(&pages),
+        )?;
+
+        grid_toggle_button.set_on_click(Box::new(|button: &Button| {
+            let mut pages = button.pages.borrow_mut();
+
+            match pages.style() {
+                PageStyle::WhiteSquared => pages.set_style(PageStyle::WhitePlain),
+                PageStyle::WhitePlain => pages.set_style(PageStyle::WhiteSquared),
+                PageStyle::BeigeSquared => pages.set_style(PageStyle::BeigePlain),
+                PageStyle::BeigePlain => pages.set_style(PageStyle::BeigeSquared),
+            }
+
+            Ok(())
+        }));
+        buttons.push(grid_toggle_button);
 
         Ok((renderer, AppComponents { pages, buttons }))
     }
 
     pub fn run(&mut self) -> Result<(), String> {
-        let (renderer, mut ac) = App::setup(&mut self.canvas, &self.tex_creator)?;
-        renderer.borrow_mut().clear();
-        renderer.borrow_mut().update();
+        let (mut renderer, mut ac) = App::setup(&mut self.canvas, &self.tex_creator)?;
 
         'main: loop {
             for event in self.event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. } => break 'main,
-                    Event::MouseWheel { y: scroll, .. } => renderer.borrow_mut().scroll(scroll),
+                    Event::MouseWheel { y: scroll, .. } => renderer.scroll(scroll),
                     _ => {}
                 }
 
@@ -107,20 +123,20 @@ impl App {
                 }
             }
 
-            renderer.borrow_mut().clear();
-            ac.pages.borrow_mut().draw(Rc::clone(&renderer))?;
+            renderer.clear();
+            ac.pages.borrow_mut().draw(&mut renderer)?;
             for button in &ac.buttons {
-                button.draw(Rc::clone(&renderer))?;
+                button.draw(&mut renderer)?;
             }
 
-            renderer.borrow_mut().update();
+            renderer.update();
         }
 
         Ok(())
     }
 }
 
-pub struct AppComponents<'p> {
-    pages: Rc<RefCell<Pages<'p>>>,
-    buttons: Vec<Button<'p>>,
+pub struct AppComponents {
+    pages: Rc<RefCell<Pages>>,
+    buttons: Vec<Button>,
 }

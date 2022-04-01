@@ -21,26 +21,26 @@ enum ButtonState {
     CLICKED,
 }
 
-pub struct Button<'b> {
+pub struct Button {
     pub id: Uuid,
     rect: Rect,
     state: ButtonState,
     toggled: bool,
     on_click: Box<dyn Fn(&Self) -> Result<(), String>>,
-    pub(super) pages: Rc<RefCell<Pages<'b>>>,
+    pub(super) pages: Rc<RefCell<Pages>>,
 }
 
-impl<'b> Button<'b> {
+impl Button {
     pub fn new(
         position: (i32, i32),
         image_path: &Path,
-        renderer: Rc<RefCell<Renderer>>,
-        pages: Rc<RefCell<Pages<'b>>>,
-    ) -> Result<Button<'b>, String> {
+        renderer: &mut Renderer,
+        pages: Rc<RefCell<Pages>>,
+    ) -> Result<Button, String> {
         let surface = Surface::from_file(image_path)?;
         let id = Uuid::new_v4();
 
-        renderer.borrow_mut().create_texture(id, vec![&surface])?;
+        renderer.create_texture(id, vec![&surface])?;
 
         Ok(Button {
             id,
@@ -110,8 +110,8 @@ impl<'b> Button<'b> {
     }
 }
 
-impl<'f> Drawable for Button<'f> {
-    fn draw(&self, renderer: Rc<RefCell<Renderer>>) -> Result<(), String> {
+impl Drawable for Button {
+    fn draw(&self, renderer: &mut Renderer) -> Result<(), String> {
         let options = DrawOptions {
             src: None,
             dst: Some(self.rect),
@@ -123,21 +123,15 @@ impl<'f> Drawable for Button<'f> {
 
         match self.state {
             ButtonState::HOVER => {
-                renderer.borrow_mut().draw_fill_rect(
-                    self.rect,
-                    Color::RGBA(0, 0, 0, 100),
-                    false,
-                )?;
+                renderer.draw_fill_rect(self.rect, Color::RGBA(0, 0, 0, 100), false)?;
             }
             ButtonState::CLICKED => {
-                renderer
-                    .borrow_mut()
-                    .draw_fill_rect(self.rect, Color::RGBA(0, 0, 0, 50), false)?;
+                renderer.draw_fill_rect(self.rect, Color::RGBA(0, 0, 0, 50), false)?;
             }
             _ => (),
         }
 
-        renderer.borrow_mut().draw_texture(self.id, 0, options)?;
+        renderer.draw_texture(self.id, 0, options)?;
 
         Ok(())
     }
