@@ -88,13 +88,13 @@ impl Pages {
 
     pub fn new(page_size: (u32, u32), renderer: &mut Renderer) -> Result<Pages, String> {
         let x = ((renderer.dimensions().0 / 2) - (page_size.0 * SQUARE_SIZE / 2)) as i32;
+        let id = Uuid::new_v4();
 
+        // Create all the page style textures to switch between them
         let white_squared_sfc = Pages::create_surface(page_size, PageStyle::WhiteSquared.path())?;
         let white_plain_sfc = Pages::create_surface(page_size, PageStyle::WhitePlain.path())?;
         let beige_squared_sfc = Pages::create_surface(page_size, PageStyle::BeigeSquared.path())?;
         let beige_plain_sfc = Pages::create_surface(page_size, PageStyle::BeigePlain.path())?;
-
-        let id = Uuid::new_v4();
 
         renderer.create_texture(
             id,
@@ -134,6 +134,7 @@ impl Pages {
 
 impl Drawable for Pages {
     fn draw(&self, renderer: &mut Renderer) -> Result<(), String> {
+        // Draw outline
         renderer.draw_fill_rect(
             Rect::new(
                 self.position.0 - 3,

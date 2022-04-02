@@ -26,8 +26,8 @@ pub struct Button {
     rect: Rect,
     state: ButtonState,
     toggled: bool,
-    on_click: Box<dyn Fn(&Self) -> Result<(), String>>,
-    pub(super) pages: Rc<RefCell<Pages>>,
+    on_click: Box<dyn Fn(&Self) -> Result<(), String>>, // Boxed closure for button functionality
+    pub(super) pages: Rc<RefCell<Pages>>, // Needed to change pages from within closure
 }
 
 impl Button {
@@ -64,10 +64,6 @@ impl Button {
         (self.rect.x, self.rect.y)
     }
 
-    pub fn is_toggled(&self) -> bool {
-        self.toggled
-    }
-
     pub fn set_on_click(&mut self, on_click: Box<dyn Fn(&Self) -> Result<(), String>>) {
         self.on_click = on_click;
     }
@@ -76,6 +72,7 @@ impl Button {
         self.rect = Rect::new(position.0, position.1, self.width(), self.height())
     }
 
+    // Handles any mouse event dealing with the button
     pub fn handle_event(&mut self, e: &Event) -> Result<(), String> {
         match e {
             Event::MouseMotion { x, y, .. } => {
@@ -96,10 +93,11 @@ impl Button {
                 Ok(())
             }
             Event::MouseButtonUp { x, y, .. } => {
-                if self.rect.contains_point((*x, *y)) {
+                if self.rect.contains_point((*x, *y)) && matches!(self.state, ButtonState::CLICKED)
+                {
                     self.state = ButtonState::HOVER;
                     self.toggled = !self.toggled;
-                    ((&*self).on_click)(self)
+                    (self.on_click)(self)
                 } else {
                     self.state = ButtonState::OFF;
                     Ok(())
@@ -121,6 +119,7 @@ impl Drawable for Button {
             on_world: false,
         };
 
+        // Shade over button when hover or clicked
         match self.state {
             ButtonState::HOVER => {
                 renderer.draw_fill_rect(self.rect, Color::RGBA(0, 0, 0, 100), false)?;

@@ -3,6 +3,7 @@ pub mod menu;
 pub mod pages;
 
 use self::button::Button;
+use self::menu::Menu;
 use self::pages::PageStyle;
 use self::pages::Pages;
 use crate::drawable::Drawable;
@@ -14,6 +15,7 @@ use std::path::Path;
 use std::rc::Rc;
 
 use sdl2::event::Event;
+use sdl2::rect::Rect;
 use sdl2::render::{TextureCreator, WindowCanvas};
 use sdl2::video::WindowContext;
 
@@ -57,9 +59,16 @@ impl App {
     ) -> Result<(Renderer<'c, 't>, AppComponents), String> {
         let mut renderer = Renderer::new(canvas, tex_creator);
 
+        // Pages needs to be shared between the components to interact with it
         let pages = Rc::new(RefCell::new(Pages::new((42, 59), &mut renderer)?));
 
-        let mut buttons = Vec::new();
+        let mut bottom_menu = Menu::new(Rect::new(
+            0,
+            renderer.dimensions().1 as i32 - 60,
+            renderer.dimensions().0,
+            30,
+        ), crate::app::menu::MenuAlignment::Horizontal);
+        bottom_menu.set_border_thickness(1);
 
         let button_y = renderer.dimensions().1 as i32 - 90;
         let mut page_style_button = Button::new(
@@ -81,7 +90,6 @@ impl App {
 
             Ok(())
         }));
-        buttons.push(page_style_button);
 
         let mut grid_toggle_button = Button::new(
             (90, button_y),
@@ -102,9 +110,17 @@ impl App {
 
             Ok(())
         }));
-        buttons.push(grid_toggle_button);
 
-        Ok((renderer, AppComponents { pages, buttons }))
+        bottom_menu.add_button(page_style_button);
+        bottom_menu.add_button(grid_toggle_button);
+
+        Ok((
+            renderer,
+            AppComponents {
+                pages,
+                menus: vec![bottom_menu],
+            },
+        ))
     }
 
     pub fn run(&mut self) -> Result<(), String> {
@@ -118,15 +134,15 @@ impl App {
                     _ => {}
                 }
 
-                for button in &mut ac.buttons {
-                    button.handle_event(&event)?;
+                for menu in &mut ac.menus {
+                    menu.handle_button_events(&event)?;
                 }
             }
 
             renderer.clear();
             ac.pages.borrow_mut().draw(&mut renderer)?;
-            for button in &ac.buttons {
-                button.draw(&mut renderer)?;
+            for menu in &ac.menus {
+                menu.draw(&mut renderer)?;
             }
 
             renderer.update();
@@ -138,5 +154,5 @@ impl App {
 
 pub struct AppComponents {
     pages: Rc<RefCell<Pages>>,
-    buttons: Vec<Button>,
+    menus: Vec<Menu>,
 }
