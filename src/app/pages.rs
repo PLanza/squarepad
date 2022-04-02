@@ -107,13 +107,17 @@ impl Pages {
             ],
         )?;
 
-        Ok(Pages {
+        let pages = Pages {
             position: Position::FreeOnWorld(x, 0),
             page_size,
             square_size: SQUARE_SIZE,
             id,
             style: PageStyle::WhiteSquared,
-        })
+        };
+
+        renderer.set_scroll_max((pages.height() - renderer.dimensions().1 + 200) as i32);
+
+        Ok(pages)
     }
 
     pub fn width(&self) -> u32 {

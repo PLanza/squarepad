@@ -16,6 +16,7 @@ pub struct Renderer<'c, 't> {
     tex_creator: &'t TextureCreator<WindowContext>,
     textures: HashMap<Uuid, Vec<Texture<'t>>>,
     camera: Rect,
+    scroll_max: i32,
 }
 
 impl<'c, 't> Renderer<'c, 't> {
@@ -32,6 +33,7 @@ impl<'c, 't> Renderer<'c, 't> {
             tex_creator,
             textures: HashMap::new(),
             camera,
+            scroll_max: 0,
         }
     }
 
@@ -74,7 +76,9 @@ impl<'c, 't> Renderer<'c, 't> {
     }
 
     pub fn scroll(&mut self, scroll: i32) {
-        let new_y = (self.camera.y - scroll * 31).max(-200);
+        // Keep the scrolling within the pages
+        let new_y = ((self.camera.y - scroll * 31).max(-200)).min(self.scroll_max);
+        println!("new_y: {}, scroll_max: {}", new_y, self.scroll_max);
 
         self.camera = Rect::new(
             self.camera.x,
@@ -82,6 +86,10 @@ impl<'c, 't> Renderer<'c, 't> {
             self.camera.width(),
             self.camera.height(),
         )
+    }
+
+    pub fn set_scroll_max(&mut self, new_max: i32) {
+        self.scroll_max = new_max
     }
 
     pub fn draw_texture(
