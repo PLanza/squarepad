@@ -12,6 +12,7 @@ use sdl2::rect::Rect;
 use sdl2::surface::Surface;
 
 const SQUARE_SIZE: u32 = 30; // In pixels squared
+pub const PAGE_PADDING: i32 = 200;
 
 #[derive(Clone, Copy)]
 pub enum PageStyle {
@@ -36,6 +37,7 @@ pub struct Pages {
     pub id: Uuid,
     position: Position,
     page_size: (u32, u32), // In number of squares, 30 x 42
+    pages: u32,
     square_size: u32,
     style: PageStyle,
 }
@@ -107,54 +109,82 @@ impl Pages {
             ],
         )?;
 
-        let pages = Pages {
-            position: Position::FreeOnWorld(x, 0),
+        Ok(Pages {
+            position: Position::FreeOnWorld(x, PAGE_PADDING),
             page_size,
             square_size: SQUARE_SIZE,
             id,
+            pages: 1,
             style: PageStyle::WhiteSquared,
-        };
-
-        renderer.set_scroll_max((pages.height() - renderer.dimensions().1 + 200) as i32);
-
-        Ok(pages)
+        })
     }
 
-    pub fn width(&self) -> u32 {
+    pub fn page_width(&self) -> u32 {
         self.page_size.0 * (self.square_size + 1) - 1
     }
 
-    pub fn height(&self) -> u32 {
+    pub fn page_height(&self) -> u32 {
         self.page_size.1 * (self.square_size + 1) - 1
+    }
+
+    pub fn total_height(&self) -> u32 {
+        self.pages * self.page_height() + PAGE_PADDING as u32 * (self.pages - 1)
     }
 
     pub fn style(&self) -> PageStyle {
         self.style
     }
 
+    pub fn pages(&self) -> u32 {
+        self.pages
+    }
+
     pub fn set_style(&mut self, style: PageStyle) {
         self.style = style
+    }
+
+    pub fn add_page(&mut self) {
+        self.pages += 1
+    }
+
+    pub fn remove_page(&mut self) {
+        self.pages = 1.max(self.pages - 1)
     }
 }
 
 impl Drawable for Pages {
     fn draw(&self, renderer: &mut Renderer) -> Result<(), String> {
-        // Draw outline
-        renderer.draw_fill_rect(
-            Position::FreeOnWorld(self.position.x() - 3, self.position.y() - 3),
-            (self.width() + 6, self.height() + 6),
-            Color::GRAY,
-        )?;
+        // Set maximum height scrollable depending on pages height
+        renderer.set_scroll_max(
+            (self.total_height() + 2 * PAGE_PADDING as u32 - renderer.dimensions().1) as i32,
+        );
 
-        let options = DrawOptions {
-            src: None,
-            position: self.position,
-            size: (self.width(), self.height()),
-            rotation: None,
-            flip_h: false,
-            flip_v: false,
-        };
+        for i in 0..(self.pages as i32) {
+            // Draw outline
+            renderer.draw_fill_rect(
+                Position::FreeOnWorld(
+                    self.position.x() - 3,
+                    self.position.y() + (self.page_height() as i32 + PAGE_PADDING) * i - 3,
+                ),
+                (self.page_width() + 6, self.page_height() + 6),
+                Color::GRAY,
+            )?;
 
-        renderer.draw_texture(self.id, self.style as usize, options)
+            let options = DrawOptions {
+                src: None,
+                position: Position::FreeOnWorld(
+                    self.position.x(),
+                    self.position.y() + (self.page_height() as i32 + PAGE_PADDING) * i,
+                ),
+                size: (self.page_width(), self.page_height()),
+                rotation: None,
+                flip_h: false,
+                flip_v: false,
+            };
+
+            renderer.draw_texture(self.id, self.style as usize, options)?;
+        }
+
+        Ok(())
     }
 }

@@ -26,7 +26,7 @@ impl<'c, 't> Renderer<'c, 't> {
         canvas: &'c mut WindowCanvas,
         tex_creator: &'t TextureCreator<WindowContext>,
     ) -> Renderer<'c, 't> {
-        let camera = Rect::new(0, -200, canvas.window().size().0, canvas.window().size().1);
+        let camera = Rect::new(0, 0, canvas.window().size().0, canvas.window().size().1);
 
         Renderer {
             canvas,
@@ -77,8 +77,7 @@ impl<'c, 't> Renderer<'c, 't> {
 
     pub fn scroll(&mut self, scroll: i32) {
         // Keep the scrolling within the pages
-        let new_y = ((self.camera.y - scroll * 31).max(-200)).min(self.scroll_max);
-        println!("new_y: {}, scroll_max: {}", new_y, self.scroll_max);
+        let new_y = ((self.camera.y - scroll * 62).max(0)).min(self.scroll_max);
 
         self.camera = Rect::new(
             self.camera.x,

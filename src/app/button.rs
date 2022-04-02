@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use sdl2::event::Event;
 use sdl2::image::LoadSurface;
-use sdl2::pixels::Color;
+use sdl2::rect::Rect;
 use sdl2::surface::Surface;
 
 #[derive(Debug)]
@@ -26,7 +26,6 @@ pub struct Button {
     position: Position,
     size: (u32, u32),
     state: ButtonState,
-    toggled: bool,
     on_click: Box<dyn Fn(&Self) -> Result<(), String>>, // Boxed closure for button functionality
     pub(super) pages: Rc<RefCell<Pages>>, // Needed to change pages from within closure
 }
@@ -38,17 +37,36 @@ impl Button {
         renderer: &mut Renderer,
         pages: Rc<RefCell<Pages>>,
     ) -> Result<Button, String> {
-        let surface = Surface::from_file(image_path)?;
+        let src = Surface::from_file(image_path)?;
+        let (sfc_w, sfc_h) = (src.width() / 3, src.height());
+
+        let mut surface_off = Surface::new(sfc_w, sfc_h, src.pixel_format_enum())?;
+        src.blit(Rect::new(0, 0, sfc_w, sfc_h), &mut surface_off, None)?;
+
+        let mut surface_hover = Surface::new(sfc_w, sfc_h, src.pixel_format_enum())?;
+        src.blit(
+            Rect::new(sfc_w as i32, 0, sfc_w, sfc_h),
+            &mut surface_hover,
+            None,
+        )?;
+
+        let mut surface_click = Surface::new(sfc_w, sfc_h, src.pixel_format_enum())?;
+        src.blit(
+            Rect::new(sfc_w as i32 * 2, 0, sfc_w, sfc_h),
+            &mut surface_click,
+            None,
+        )?;
+
         let id = Uuid::new_v4();
 
-        renderer.create_texture(id, vec![&surface])?;
+        // Each button has 3 associated surfaces that will be displayed depending on their state
+        renderer.create_texture(id, vec![&surface_off, &surface_hover, &surface_click])?;
 
         Ok(Button {
             id,
             position,
-            size: (surface.width(), surface.height()),
+            size: (sfc_w, sfc_h),
             state: ButtonState::OFF,
-            toggled: false,
             on_click: Box::new(|_| Ok(())),
             pages,
         })
@@ -121,7 +139,6 @@ impl Button {
                     && matches!(self.state, ButtonState::CLICKED)
                 {
                     self.state = ButtonState::HOVER;
-                    self.toggled = !self.toggled;
                     (self.on_click)(self)
                 } else {
                     self.state = ButtonState::OFF;
@@ -140,23 +157,15 @@ impl Drawable for Button {
             position: self.position,
             size: self.size,
             rotation: None,
-            flip_h: self.toggled,
+            flip_h: false,
             flip_v: false,
         };
 
         // Shade over button when hover or clicked
         match self.state {
-            ButtonState::HOVER => {
-                renderer.draw_fill_rect(self.position, self.size, Color::RGBA(0, 0, 0, 100))?;
-            }
-            ButtonState::CLICKED => {
-                renderer.draw_fill_rect(self.position, self.size, Color::RGBA(0, 0, 0, 50))?;
-            }
-            _ => (),
+            ButtonState::OFF => renderer.draw_texture(self.id, 0, options),
+            ButtonState::HOVER => renderer.draw_texture(self.id, 1, options),
+            ButtonState::CLICKED => renderer.draw_texture(self.id, 2, options),
         }
-
-        renderer.draw_texture(self.id, 0, options)?;
-
-        Ok(())
     }
 }

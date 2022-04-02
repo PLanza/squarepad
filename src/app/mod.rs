@@ -108,15 +108,41 @@ impl App {
 
             Ok(())
         }));
-
         bottom_menu.add_button(page_style_button);
         bottom_menu.add_button(grid_toggle_button);
+
+        let mut add_page_button = Button::new(
+            Position::AnchoredRightBottom(220, 140),
+            Path::new("assets/add_page_button.png"),
+            &mut renderer,
+            Rc::clone(&pages),
+        )?;
+
+        add_page_button.set_on_click(Box::new(|button: &Button| {
+            button.pages.borrow_mut().add_page();
+
+            Ok(())
+        }));
+
+        let mut remove_page_button = Button::new(
+            Position::AnchoredRightBottom(110, 140),
+            Path::new("assets/remove_page_button.png"),
+            &mut renderer,
+            Rc::clone(&pages),
+        )?;
+
+        remove_page_button.set_on_click(Box::new(|button: &Button| {
+            button.pages.borrow_mut().remove_page();
+
+            Ok(())
+        }));
 
         Ok((
             renderer,
             AppComponents {
                 pages,
                 menus: vec![bottom_menu],
+                buttons: vec![add_page_button, remove_page_button],
             },
         ))
     }
@@ -135,12 +161,18 @@ impl App {
                 for menu in &mut ac.menus {
                     menu.handle_button_events(&event, renderer.dimensions())?;
                 }
+                for button in &mut ac.buttons {
+                    button.handle_event(&event, renderer.dimensions())?;
+                }
             }
 
             renderer.clear();
             ac.pages.borrow_mut().draw(&mut renderer)?;
             for menu in &ac.menus {
                 menu.draw(&mut renderer)?;
+            }
+            for button in &ac.buttons {
+                button.draw(&mut renderer)?;
             }
 
             renderer.update();
@@ -153,4 +185,5 @@ impl App {
 pub struct AppComponents {
     pages: Rc<RefCell<Pages>>,
     menus: Vec<Menu>,
+    buttons: Vec<Button>,
 }
