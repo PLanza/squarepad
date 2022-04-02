@@ -2,6 +2,7 @@ extern crate sdl2;
 
 pub mod app;
 pub mod drawable;
+pub mod position;
 pub mod renderer;
 
 use app::App;

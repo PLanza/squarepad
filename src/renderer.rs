@@ -1,4 +1,5 @@
 use crate::drawable::DrawOptions;
+use crate::position::Position;
 
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
@@ -52,15 +53,6 @@ impl<'c, 't> Renderer<'c, 't> {
         Ok(())
     }
 
-    fn world_to_screen(&self, rect: Rect) -> Rect {
-        Rect::new(
-            rect.x - self.camera.x,
-            rect.y - self.camera.y,
-            rect.width(),
-            rect.height(),
-        )
-    }
-
     // Clears canvas
     pub fn clear(&mut self) {
         self.canvas.set_draw_color(Color::WHITE);
@@ -75,6 +67,10 @@ impl<'c, 't> Renderer<'c, 't> {
     // Returns the dimensions of the window.
     pub fn dimensions(&self) -> (u32, u32) {
         self.canvas.window().size()
+    }
+
+    pub fn camera(&self) -> Rect {
+        self.camera
     }
 
     pub fn scroll(&mut self, scroll: i32) {
@@ -100,22 +96,15 @@ impl<'c, 't> Renderer<'c, 't> {
             None => return Err("Texture not found".to_string()),
         }
 
-        // Convert from world to screen coordinates
-        let dst = match options.dst {
-            None => None,
-            Some(rect) => {
-                if options.on_world {
-                    Some(self.world_to_screen(rect))
-                } else {
-                    Some(rect)
-                }
-            }
-        };
+        // Convert from all positions to screen coordinates
+        let position = options
+            .position
+            .to_free_on_screen(Some(self.dimensions()), Some(self.camera))?;
 
         self.canvas.copy_ex(
             &textures[index],
             options.src,
-            dst,
+            Rect::new(position.x(), position.y(), options.size.0, options.size.1),
             match options.rotation {
                 Some(rotation) => rotation.0,
                 None => 0.0,
@@ -133,28 +122,34 @@ impl<'c, 't> Renderer<'c, 't> {
 
     pub fn draw_line(
         &mut self,
-        start: (i32, i32),
-        end: (i32, i32),
+        start: Position,
+        end: Position,
         color: Color,
     ) -> Result<(), String> {
         self.canvas.set_draw_color(color);
+        let (start, end): ((i32, i32), (i32, i32)) = (
+            start
+                .to_free_on_screen(Some(self.dimensions()), Some(self.camera))?
+                .into(),
+            end.to_free_on_screen(Some(self.dimensions()), Some(self.camera))?
+                .into(),
+        );
+
         self.canvas.draw_line(start, end)?;
         Ok(())
     }
 
     pub fn draw_fill_rect(
         &mut self,
-        rect: Rect,
+        position: Position,
+        size: (u32, u32),
         color: Color,
-        on_world: bool,
     ) -> Result<(), String> {
         self.canvas.set_draw_color(color);
-        if on_world {
-            self.canvas.fill_rect(self.world_to_screen(rect))?;
-        } else {
-            self.canvas.fill_rect(rect)?;
-        }
 
-        Ok(())
+        let position = position.to_free_on_screen(Some(self.dimensions()), Some(self.camera))?;
+
+        self.canvas
+            .fill_rect(Rect::new(position.x(), position.y(), size.0, size.1))
     }
 }

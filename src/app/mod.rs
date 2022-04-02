@@ -7,6 +7,7 @@ use self::menu::Menu;
 use self::pages::PageStyle;
 use self::pages::Pages;
 use crate::drawable::Drawable;
+use crate::position::Position;
 use crate::renderer::Renderer;
 use crate::SdlContext;
 
@@ -15,7 +16,6 @@ use std::path::Path;
 use std::rc::Rc;
 
 use sdl2::event::Event;
-use sdl2::rect::Rect;
 use sdl2::render::{TextureCreator, WindowCanvas};
 use sdl2::video::WindowContext;
 
@@ -62,17 +62,15 @@ impl App {
         // Pages needs to be shared between the components to interact with it
         let pages = Rc::new(RefCell::new(Pages::new((42, 59), &mut renderer)?));
 
-        let mut bottom_menu = Menu::new(Rect::new(
-            0,
-            renderer.dimensions().1 as i32 - 60,
-            renderer.dimensions().0,
-            30,
-        ), crate::app::menu::MenuAlignment::Horizontal);
+        let mut bottom_menu = Menu::new(
+            Position::AnchoredLeftBottom(0, 30),
+            (renderer.dimensions().0, 30),
+            crate::app::menu::MenuAlignment::Horizontal,
+        );
         bottom_menu.set_border_thickness(1);
 
-        let button_y = renderer.dimensions().1 as i32 - 90;
         let mut page_style_button = Button::new(
-            (30, button_y),
+            Position::FreeOnScreen(0, 0),
             Path::new("assets/page_style_button.png"),
             &mut renderer,
             Rc::clone(&pages),
@@ -92,7 +90,7 @@ impl App {
         }));
 
         let mut grid_toggle_button = Button::new(
-            (90, button_y),
+            Position::FreeOnScreen(0, 0),
             Path::new("assets/grid_toggle_button.png"),
             &mut renderer,
             Rc::clone(&pages),
@@ -135,7 +133,7 @@ impl App {
                 }
 
                 for menu in &mut ac.menus {
-                    menu.handle_button_events(&event)?;
+                    menu.handle_button_events(&event, renderer.dimensions())?;
                 }
             }
 

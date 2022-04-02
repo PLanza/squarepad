@@ -1,10 +1,10 @@
 use super::button::Button;
 use crate::drawable::Drawable;
+use crate::position::Position;
 use crate::renderer::Renderer;
 
 use sdl2::event::Event;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
 
 use uuid::Uuid;
 
@@ -15,9 +15,10 @@ pub enum MenuAlignment {
 
 pub struct Menu {
     pub id: Uuid,
-    rect: Rect,
+    position: Position,
+    size: (u32, u32),
     alignment: MenuAlignment,
-    border_thickenss: u32, // in pixels
+    border_thickness: u32, // in pixels
     color: Color,
     border_color: Color,
     padding: (i32, i32),
@@ -25,12 +26,13 @@ pub struct Menu {
 }
 
 impl Menu {
-    pub fn new(rect: Rect, alignment: MenuAlignment) -> Menu {
+    pub fn new(position: Position, size: (u32, u32), alignment: MenuAlignment) -> Menu {
         Menu {
             id: Uuid::new_v4(),
             alignment,
-            rect,
-            border_thickenss: 3,
+            position,
+            size,
+            border_thickness: 3,
             color: Color::WHITE,
             border_color: Color::GRAY,
             padding: (30, 0),
@@ -38,21 +40,16 @@ impl Menu {
         }
     }
 
-    pub fn set_position(&mut self, position: (i32, i32)) {
-        self.rect = Rect::new(
-            position.0,
-            position.1,
-            self.rect.width(),
-            self.rect.height(),
-        )
+    pub fn set_position(&mut self, position: Position) {
+        self.position = position
     }
 
-    pub fn set_dimensions(&mut self, dimensions: (u32, u32)) {
-        self.rect = Rect::new(self.rect.x(), self.rect.y(), dimensions.0, dimensions.1)
+    pub fn set_size(&mut self, size: (u32, u32)) {
+        self.size = size
     }
 
-    pub fn set_border_thickness(&mut self, border_thickenss: u32) {
-        self.border_thickenss = border_thickenss
+    pub fn set_border_thickness(&mut self, border_thickness: u32) {
+        self.border_thickness = border_thickness
     }
 
     pub fn set_color(&mut self, color: Color) {
@@ -68,29 +65,31 @@ impl Menu {
     }
 
     pub fn add_button(&mut self, mut new_button: Button) {
-        let mut position = match self.alignment {
-            MenuAlignment::Horizontal => (self.padding.0, self.rect.y + self.padding.1),
-            MenuAlignment::Vertical => (self.rect.x + self.padding.0, self.padding.1),
-        };
+        let mut position = Position::add(self.position, self.padding.0, self.padding.1);
 
         for button in &mut self.buttons {
             match self.alignment {
                 MenuAlignment::Horizontal => {
-                    position.0 += button.width() as i32 + self.padding.0;
+                    position = Position::add(position, button.width() as i32 + self.padding.0, 0);
                 }
                 MenuAlignment::Vertical => {
-                    position.1 += button.height() as i32 + self.padding.1;
+                    position = Position::add(position, 0, button.height() as i32 + self.padding.1);
                 }
             };
         }
+
         new_button.set_position(position);
 
         self.buttons.push(new_button)
     }
 
-    pub fn handle_button_events(&mut self, event: &Event) -> Result<(), String> {
+    pub fn handle_button_events(
+        &mut self,
+        event: &Event,
+        screen_dimensions: (u32, u32),
+    ) -> Result<(), String> {
         for button in &mut self.buttons {
-            button.handle_event(event)?;
+            button.handle_event(event, screen_dimensions)?;
         }
 
         Ok(())
@@ -101,18 +100,21 @@ impl Drawable for Menu {
     fn draw(&self, renderer: &mut Renderer) -> Result<(), String> {
         // draw border
         renderer.draw_fill_rect(
-            Rect::new(
-                self.rect.x - self.border_thickenss as i32,
-                self.rect.y - self.border_thickenss as i32,
-                self.rect.width() + 2 * self.border_thickenss,
-                self.rect.height() + 2 * self.border_thickenss,
+            Position::add(
+                self.position
+                    .to_free_on_screen(Some(renderer.dimensions()), Some(renderer.camera()))?,
+                -(self.border_thickness as i32),
+                -(self.border_thickness as i32),
+            ),
+            (
+                self.size.0 + 2 * self.border_thickness,
+                self.size.1 + 2 * self.border_thickness,
             ),
             self.border_color,
-            false,
         )?;
 
         // draw center
-        renderer.draw_fill_rect(self.rect, self.color, false)?;
+        renderer.draw_fill_rect(self.position, self.size, self.color)?;
 
         for button in &self.buttons {
             button.draw(renderer)?;

@@ -1,4 +1,5 @@
 use crate::drawable::{DrawOptions, Drawable};
+use crate::position::Position;
 use crate::renderer::Renderer;
 
 use std::path::Path;
@@ -33,7 +34,7 @@ impl PageStyle {
 
 pub struct Pages {
     pub id: Uuid,
-    position: (i32, i32),
+    position: Position,
     page_size: (u32, u32), // In number of squares, 30 x 42
     square_size: u32,
     style: PageStyle,
@@ -107,7 +108,7 @@ impl Pages {
         )?;
 
         Ok(Pages {
-            position: (x, 0),
+            position: Position::FreeOnWorld(x, 0),
             page_size,
             square_size: SQUARE_SIZE,
             id,
@@ -136,28 +137,18 @@ impl Drawable for Pages {
     fn draw(&self, renderer: &mut Renderer) -> Result<(), String> {
         // Draw outline
         renderer.draw_fill_rect(
-            Rect::new(
-                self.position.0 - 3,
-                self.position.1 - 3,
-                self.width() + 6,
-                self.height() + 6,
-            ),
+            Position::FreeOnWorld(self.position.x() - 3, self.position.y() - 3),
+            (self.width() + 6, self.height() + 6),
             Color::GRAY,
-            true,
         )?;
 
         let options = DrawOptions {
             src: None,
-            dst: Some(Rect::new(
-                self.position.0,
-                self.position.1,
-                self.width(),
-                self.height(),
-            )),
+            position: self.position,
+            size: (self.width(), self.height()),
             rotation: None,
             flip_h: false,
             flip_v: false,
-            on_world: true,
         };
 
         renderer.draw_texture(self.id, self.style as usize, options)
