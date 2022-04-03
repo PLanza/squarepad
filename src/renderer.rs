@@ -75,6 +75,10 @@ impl<'c, 't> Renderer<'c, 't> {
         self.camera
     }
 
+    pub fn set_camera(&mut self, rect: Rect) {
+        self.camera = rect
+    }
+
     pub fn scroll(&mut self, scroll: i32) {
         // Keep the scrolling within the pages
         let new_y = ((self.camera.y - scroll * 62).max(0)).min(self.scroll_max);

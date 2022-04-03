@@ -90,7 +90,6 @@ impl Pages {
     }
 
     pub fn new(page_size: (u32, u32), renderer: &mut Renderer) -> Result<Pages, String> {
-        let x = ((renderer.dimensions().0 / 2) - (page_size.0 * SQUARE_SIZE / 2)) as i32;
         let id = Uuid::new_v4();
 
         // Create all the page style textures to switch between them
@@ -110,7 +109,7 @@ impl Pages {
         )?;
 
         Ok(Pages {
-            position: Position::FreeOnWorld(x, PAGE_PADDING),
+            position: Position::FreeOnWorld(0, PAGE_PADDING),
             page_size,
             square_size: SQUARE_SIZE,
             id,

@@ -16,6 +16,8 @@ use std::path::Path;
 use std::rc::Rc;
 
 use sdl2::event::Event;
+use sdl2::event::WindowEvent;
+use sdl2::rect::Rect;
 use sdl2::render::{TextureCreator, WindowCanvas};
 use sdl2::video::WindowContext;
 
@@ -154,8 +156,20 @@ impl App {
             for event in self.event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. } => break 'main,
+                    Event::Window { win_event: e, .. } => match e {
+                        WindowEvent::Resized(width, height) => {
+                            // Adjust pages position based on window dimensions
+                            renderer.set_camera(Rect::new(
+                                (ac.pages.borrow().page_width() as i32 - width) / 2,
+                                renderer.camera().y(),
+                                width as u32,
+                                height as u32,
+                            ))
+                        }
+                        _ => (),
+                    },
                     Event::MouseWheel { y: scroll, .. } => renderer.scroll(scroll),
-                    _ => {}
+                    _ => (),
                 }
 
                 for menu in &mut ac.menus {
