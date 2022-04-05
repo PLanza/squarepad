@@ -163,4 +163,29 @@ impl<'c, 't> Renderer<'c, 't> {
         self.canvas
             .fill_rect(Rect::new(position.x(), position.y(), size.0, size.1))
     }
+
+    pub fn draw_rect(
+        &mut self,
+        position: Position,
+        thickness: i32,
+        size: (u32, u32),
+        color: Color,
+    ) -> Result<(), String> {
+        self.canvas.set_draw_color(color);
+
+        let mut position =
+            position.to_free_on_screen(Some(self.dimensions()), Some(self.camera))?;
+        let mut size = size;
+
+        // Since cannot set thickness of rectangle use canvas.draw_fill_rect
+        // This instead draws <thickness> concentric rectangles outwards
+        for _ in 0..thickness {
+            self.canvas
+                .draw_rect(Rect::new(position.x(), position.y(), size.0, size.1))?;
+            position = Position::add(position, -1, -1);
+            size = (size.0 + 2, size.1 + 2);
+        }
+
+        Ok(())
+    }
 }

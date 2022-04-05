@@ -8,6 +8,7 @@ use self::menu::Menu;
 use self::pages::PageStyle;
 use self::pages::Pages;
 use crate::drawable::Drawable;
+use crate::editor::Editor;
 use crate::position::Position;
 use crate::renderer::Renderer;
 use crate::SdlContext;
@@ -18,6 +19,7 @@ use std::rc::Rc;
 
 use sdl2::event::Event;
 use sdl2::event::WindowEvent;
+use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{TextureCreator, WindowCanvas};
 use sdl2::video::WindowContext;
@@ -64,6 +66,7 @@ impl App {
 
         // Pages needs to be shared between the components to interact with it
         let pages = Rc::new(RefCell::new(Pages::new((42, 59), &mut renderer)?));
+        let editor = Rc::new(RefCell::new(Editor::new(Rc::clone(&pages))));
 
         let mut bottom_menu = Menu::new(
             Position::AnchoredLeftBottom(0, 30),
@@ -77,17 +80,17 @@ impl App {
             Position::FreeOnScreen(0, 0),
             Path::new("assets/page_style_button.png"),
             &mut renderer,
-            Rc::clone(&pages),
+            Rc::clone(&editor),
         )?;
 
-        page_style_button.set_on_click(Box::new(|button: &Button| {
-            let mut pages = button.pages.borrow_mut();
+        page_style_button.set_on_click(Box::new(|button| {
+            let editor = button.editor.borrow();
 
-            match pages.style() {
-                PageStyle::WhiteSquared => pages.set_style(PageStyle::BeigeSquared),
-                PageStyle::WhitePlain => pages.set_style(PageStyle::BeigePlain),
-                PageStyle::BeigeSquared => pages.set_style(PageStyle::WhiteSquared),
-                PageStyle::BeigePlain => pages.set_style(PageStyle::WhitePlain),
+            match editor.get_pages_style() {
+                PageStyle::WhiteSquared => editor.set_pages_style(PageStyle::BeigeSquared),
+                PageStyle::WhitePlain => editor.set_pages_style(PageStyle::BeigePlain),
+                PageStyle::BeigeSquared => editor.set_pages_style(PageStyle::WhiteSquared),
+                PageStyle::BeigePlain => editor.set_pages_style(PageStyle::WhitePlain),
             }
 
             Ok(())
@@ -97,17 +100,17 @@ impl App {
             Position::FreeOnScreen(0, 0),
             Path::new("assets/grid_toggle_button.png"),
             &mut renderer,
-            Rc::clone(&pages),
+            Rc::clone(&editor),
         )?;
 
-        grid_toggle_button.set_on_click(Box::new(|button: &Button| {
-            let mut pages = button.pages.borrow_mut();
+        grid_toggle_button.set_on_click(Box::new(|button| {
+            let editor = button.editor.borrow();
 
-            match pages.style() {
-                PageStyle::WhiteSquared => pages.set_style(PageStyle::WhitePlain),
-                PageStyle::WhitePlain => pages.set_style(PageStyle::WhiteSquared),
-                PageStyle::BeigeSquared => pages.set_style(PageStyle::BeigePlain),
-                PageStyle::BeigePlain => pages.set_style(PageStyle::BeigeSquared),
+            match editor.get_pages_style() {
+                PageStyle::WhiteSquared => editor.set_pages_style(PageStyle::WhitePlain),
+                PageStyle::WhitePlain => editor.set_pages_style(PageStyle::WhiteSquared),
+                PageStyle::BeigeSquared => editor.set_pages_style(PageStyle::BeigePlain),
+                PageStyle::BeigePlain => editor.set_pages_style(PageStyle::BeigeSquared),
             }
 
             Ok(())
@@ -119,11 +122,11 @@ impl App {
             Position::AnchoredRightBottom(220, 140),
             Path::new("assets/add_page_button.png"),
             &mut renderer,
-            Rc::clone(&pages),
+            Rc::clone(&editor),
         )?;
 
-        add_page_button.set_on_click(Box::new(|button: &Button| {
-            button.pages.borrow_mut().add_page();
+        add_page_button.set_on_click(Box::new(|button| {
+            button.editor.borrow().add_page();
 
             Ok(())
         }));
@@ -132,21 +135,22 @@ impl App {
             Position::AnchoredRightBottom(120, 140),
             Path::new("assets/remove_page_button.png"),
             &mut renderer,
-            Rc::clone(&pages),
+            Rc::clone(&editor),
         )?;
 
-        remove_page_button.set_on_click(Box::new(|button: &Button| {
-            button.pages.borrow_mut().remove_page();
+        remove_page_button.set_on_click(Box::new(|button| {
+            button.editor.borrow().remove_page();
 
             Ok(())
         }));
 
-        let tool_menu = crate::app::setup::setup_tool_menu(&mut renderer, Rc::clone(&pages))?;
+        let tool_menu = crate::app::setup::setup_tool_menu(&mut renderer, Rc::clone(&editor))?;
 
         Ok((
             renderer,
             AppComponents {
                 pages,
+                editor,
                 menus: vec![bottom_menu, tool_menu],
                 buttons: vec![add_page_button, remove_page_button],
             },
@@ -193,6 +197,20 @@ impl App {
                 button.draw(&mut renderer)?;
             }
 
+            // Draws a rectangle around the currently selected tool
+            let tool = ac.editor.borrow().get_tool() as i32;
+            let tool_menu = &ac.menus[1];
+            renderer.draw_rect(
+                Position::add(
+                    tool_menu.position(),
+                    tool_menu.padding().0 - 1,
+                    tool_menu.padding().1 * (tool + 1) + 100 * tool - 1,
+                ),
+                3,
+                (102, 102),
+                Color::BLACK,
+            )?;
+
             renderer.update();
         }
 
@@ -202,6 +220,7 @@ impl App {
 
 pub struct AppComponents {
     pages: Rc<RefCell<Pages>>,
+    editor: Rc<RefCell<Editor>>,
     menus: Vec<Menu>,
     buttons: Vec<Button>,
 }

@@ -40,6 +40,13 @@ impl Menu {
         }
     }
 
+    pub fn position(&self) -> Position {
+        self.position
+    }
+    pub fn padding(&self) -> (i32, i32) {
+        self.padding
+    }
+
     pub fn set_position(&mut self, position: Position) {
         self.position = position
     }
@@ -64,6 +71,8 @@ impl Menu {
         self.padding = padding
     }
 
+    // Takes a button and changes its position to align with the menu
+    // The position that the button previously held is lost
     pub fn add_button(&mut self, mut new_button: Button) {
         let mut position = Position::add(self.position, self.padding.0, self.padding.1);
 
@@ -77,7 +86,6 @@ impl Menu {
                 }
             };
         }
-
         new_button.set_position(position);
 
         self.buttons.push(new_button)

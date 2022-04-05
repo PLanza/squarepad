@@ -1,5 +1,5 @@
-use super::pages::Pages;
 use crate::drawable::{DrawOptions, Drawable};
+use crate::editor::Editor;
 use crate::position::Position;
 use crate::renderer::Renderer;
 
@@ -27,7 +27,7 @@ pub struct Button {
     size: (u32, u32),
     state: ButtonState,
     on_click: Box<dyn Fn(&Self) -> Result<(), String>>, // Boxed closure for button functionality
-    pub(super) pages: Rc<RefCell<Pages>>, // Needed to change pages from within closure
+    pub(super) editor: Rc<RefCell<Editor>>, // Needed to change pages from within closure
 }
 
 impl Button {
@@ -35,7 +35,7 @@ impl Button {
         position: Position,
         image_path: &Path,
         renderer: &mut Renderer,
-        pages: Rc<RefCell<Pages>>,
+        editor: Rc<RefCell<Editor>>,
     ) -> Result<Button, String> {
         let src = Surface::from_file(image_path)?;
         let (sfc_w, sfc_h) = (src.width() / 3, src.height());
@@ -68,7 +68,7 @@ impl Button {
             size: (sfc_w, sfc_h),
             state: ButtonState::OFF,
             on_click: Box::new(|_| Ok(())),
-            pages,
+            editor,
         })
     }
 
