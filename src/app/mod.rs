@@ -1,6 +1,7 @@
 pub mod button;
 pub mod menu;
 pub mod pages;
+pub mod setup;
 
 use self::button::Button;
 use self::menu::Menu;
@@ -70,6 +71,7 @@ impl App {
             crate::app::menu::MenuAlignment::Horizontal,
         );
         bottom_menu.set_border_thickness(1);
+        bottom_menu.set_padding((30, 0));
 
         let mut page_style_button = Button::new(
             Position::FreeOnScreen(0, 0),
@@ -127,7 +129,7 @@ impl App {
         }));
 
         let mut remove_page_button = Button::new(
-            Position::AnchoredRightBottom(110, 140),
+            Position::AnchoredRightBottom(120, 140),
             Path::new("assets/remove_page_button.png"),
             &mut renderer,
             Rc::clone(&pages),
@@ -139,11 +141,13 @@ impl App {
             Ok(())
         }));
 
+        let tool_menu = crate::app::setup::setup_tool_menu(&mut renderer, Rc::clone(&pages))?;
+
         Ok((
             renderer,
             AppComponents {
                 pages,
-                menus: vec![bottom_menu],
+                menus: vec![bottom_menu, tool_menu],
                 buttons: vec![add_page_button, remove_page_button],
             },
         ))

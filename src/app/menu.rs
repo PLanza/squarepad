@@ -35,7 +35,7 @@ impl Menu {
             border_thickness: 3,
             color: Color::WHITE,
             border_color: Color::GRAY,
-            padding: (30, 0),
+            padding: (0, 0),
             buttons: Vec::new(),
         }
     }

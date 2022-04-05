@@ -56,11 +56,13 @@ impl Position {
         }
     }
 
+    // Adds (dx, dy) to any position from the origin at the top-left corner
+    // If dx and dy are both positive, this will result in a translate down and to the right
     pub fn add(p1: Position, dx: i32, dy: i32) -> Position {
         match p1 {
-            Position::AnchoredLeftBottom(x, y) => Position::AnchoredLeftBottom(x + dx, y + dy),
-            Position::AnchoredRightTop(x, y) => Position::AnchoredRightTop(x + dx, y + dy),
-            Position::AnchoredRightBottom(x, y) => Position::AnchoredRightBottom(x + dx, y + dy),
+            Position::AnchoredLeftBottom(x, y) => Position::AnchoredLeftBottom(x + dx, y - dy),
+            Position::AnchoredRightTop(x, y) => Position::AnchoredRightTop(x - dx, y + dy),
+            Position::AnchoredRightBottom(x, y) => Position::AnchoredRightBottom(x - dx, y - dy),
             Position::FreeOnWorld(x, y) => Position::FreeOnWorld(x + dx, y + dy),
             Position::FreeOnScreen(x, y) => Position::FreeOnScreen(x + dx, y + dy),
         }
