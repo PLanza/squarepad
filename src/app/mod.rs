@@ -195,6 +195,8 @@ impl App {
 
             renderer.clear();
             ac.pages.borrow_mut().draw(&mut renderer)?;
+            ac.cursor.draw(&mut renderer)?;
+
             for menu in &ac.menus {
                 menu.draw(&mut renderer)?;
             }
@@ -215,8 +217,6 @@ impl App {
                 (102, 102),
                 Color::BLACK,
             )?;
-
-            ac.cursor.draw(&mut renderer)?;
 
             renderer.update();
         }

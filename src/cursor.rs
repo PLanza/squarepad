@@ -60,6 +60,35 @@ impl Drawable for Cursor {
 
         renderer.draw_rect(s, 2, (square_size, square_size), Color::BLACK)?;
 
+        // Draw semi transparent rectangles in the four directions,
+        // from the cursor square to the edeges of the page
+        renderer.draw_fill_rect(
+            Position::FreeOnScreen(s.x(), p.y()),
+            (square_size, (s.y() - p.y()) as u32),
+            Color::RGBA(0, 0, 0, 50),
+        )?;
+        renderer.draw_fill_rect(
+            Position::FreeOnScreen(p.x(), s.y()),
+            ((s.x() - p.x()) as u32, square_size),
+            Color::RGBA(0, 0, 0, 50),
+        )?;
+        renderer.draw_fill_rect(
+            Position::FreeOnScreen(s.x(), s.y() + square_size as i32 + 1),
+            (
+                square_size,
+                (p.y() + pages.page_height() as i32 - s.y()) as u32 - square_size,
+            ),
+            Color::RGBA(0, 0, 0, 50),
+        )?;
+        renderer.draw_fill_rect(
+            Position::FreeOnScreen(s.x() + square_size as i32 + 1, s.y()),
+            (
+                (p.x() + pages.page_width() as i32 - s.x()) as u32 - square_size,
+                square_size,
+            ),
+            Color::RGBA(0, 0, 0, 50),
+        )?;
+
         Ok(())
     }
 }
