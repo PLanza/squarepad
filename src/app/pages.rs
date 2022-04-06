@@ -157,6 +157,35 @@ impl Pages {
     pub fn remove_page(&mut self) {
         self.pages = 1.max(self.pages - 1)
     }
+
+    // Get the FreeOnWorld position of the 0 indexed page
+    pub fn get_page_position(&self, page_num: u32) -> Position {
+        Position::add(
+            self.position(),
+            0,
+            (self.page_height() as i32 + PAGE_PADDING) * page_num as i32,
+        )
+    }
+
+    // Returns the 0 indexed page in which point give is located in on screen
+    // If it is outside any page, returns None
+    pub fn page_contains(&self, point: Position, camera: Rect) -> Option<u32> {
+        // Could be made more efficient without a for loop
+        for i in 0..self.pages {
+            let p = self
+                .get_page_position(i)
+                .to_free_on_screen(None, Some(camera))
+                .unwrap();
+
+            let rect = Rect::new(p.x(), p.y(), self.page_width(), self.page_height());
+
+            if rect.contains_point(point) {
+                return Some(i);
+            }
+        }
+
+        None
+    }
 }
 
 impl Drawable for Pages {

@@ -1,3 +1,4 @@
+use sdl2::rect::Point;
 use sdl2::rect::Rect;
 
 #[derive(Clone, Copy, Debug)]
@@ -76,5 +77,11 @@ impl Position {
 impl Into<(i32, i32)> for Position {
     fn into(self) -> (i32, i32) {
         (self.x(), self.y())
+    }
+}
+
+impl Into<Point> for Position {
+    fn into(self) -> Point {
+        Point::new(self.x(), self.y())
     }
 }

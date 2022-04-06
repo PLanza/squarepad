@@ -12,7 +12,6 @@ use sdl2::pixels::Color;
 pub struct Cursor {
     position: Position,
     editor: Rc<RefCell<Editor>>,
-    on_page: Option<u32>,
 }
 
 impl Cursor {
@@ -20,7 +19,6 @@ impl Cursor {
         Cursor {
             position: Position::FreeOnScreen(500, 500),
             editor,
-            on_page: Some(0),
         }
     }
 
@@ -36,18 +34,22 @@ impl Cursor {
 }
 
 impl Drawable for Cursor {
+    // Draws a square around the square where the cursor finds itself in
     fn draw(&self, renderer: &mut Renderer) -> Result<(), String> {
-        match self.on_page {
-            None => return Ok(()),
-            _ => (),
-        }
-
         let editor = self.editor.borrow();
         let pages = editor.borrow_pages();
-        let p = pages
-            .position()
-            .to_free_on_screen(None, Some(renderer.camera()))?;
         let square_size = pages.square_size();
+
+        // The FreeOnScreen position of the page that the cursor is on top of
+        let p;
+        match pages.page_contains(self.position, renderer.camera()) {
+            None => return Ok(()),
+            Some(i) => {
+                p = pages
+                    .get_page_position(i)
+                    .to_free_on_screen(None, Some(renderer.camera()))?
+            }
+        }
 
         let d = Position::add(self.position, -p.x(), -p.y());
         let s = Position::add(

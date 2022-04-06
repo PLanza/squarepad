@@ -138,12 +138,9 @@ impl<'c, 't> Renderer<'c, 't> {
         color: Color,
     ) -> Result<(), String> {
         self.canvas.set_draw_color(color);
-        let (start, end): ((i32, i32), (i32, i32)) = (
-            start
-                .to_free_on_screen(Some(self.dimensions()), Some(self.camera))?
-                .into(),
-            end.to_free_on_screen(Some(self.dimensions()), Some(self.camera))?
-                .into(),
+        let (start, end) = (
+            start.to_free_on_screen(Some(self.dimensions()), Some(self.camera))?,
+            end.to_free_on_screen(Some(self.dimensions()), Some(self.camera))?,
         );
 
         self.canvas.draw_line(start, end)?;
