@@ -118,6 +118,14 @@ impl Pages {
         })
     }
 
+    pub fn square_size(&self) -> u32 {
+        self.square_size
+    }
+
+    pub fn position(&self) -> Position {
+        self.position
+    }
+
     pub fn page_width(&self) -> u32 {
         self.page_size.0 * (self.square_size + 1) - 1
     }

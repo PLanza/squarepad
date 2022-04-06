@@ -7,6 +7,7 @@ use self::button::Button;
 use self::menu::Menu;
 use self::pages::PageStyle;
 use self::pages::Pages;
+use crate::cursor::Cursor;
 use crate::drawable::Drawable;
 use crate::editor::Editor;
 use crate::position::Position;
@@ -146,11 +147,14 @@ impl App {
 
         let tool_menu = crate::app::setup::setup_tool_menu(&mut renderer, Rc::clone(&editor))?;
 
+        let cursor = Cursor::new(Rc::clone(&editor));
+
         Ok((
             renderer,
             AppComponents {
                 pages,
                 editor,
+                cursor,
                 menus: vec![bottom_menu, tool_menu],
                 buttons: vec![add_page_button, remove_page_button],
             },
@@ -179,6 +183,7 @@ impl App {
                     Event::MouseWheel { y: scroll, .. } => renderer.scroll(scroll),
                     _ => (),
                 }
+                ac.cursor.handle_event(&event)?;
 
                 for menu in &mut ac.menus {
                     menu.handle_button_events(&event, renderer.dimensions())?;
@@ -211,6 +216,8 @@ impl App {
                 Color::BLACK,
             )?;
 
+            ac.cursor.draw(&mut renderer)?;
+
             renderer.update();
         }
 
@@ -221,6 +228,7 @@ impl App {
 pub struct AppComponents {
     pages: Rc<RefCell<Pages>>,
     editor: Rc<RefCell<Editor>>,
+    cursor: Cursor,
     menus: Vec<Menu>,
     buttons: Vec<Button>,
 }

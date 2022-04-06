@@ -1,10 +1,13 @@
+pub mod text_tool;
+
 use crate::app::pages::{PageStyle, Pages};
 
+use std::cell::Ref;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 #[derive(Clone, Copy)]
-pub enum Tool {
+pub enum ToolType {
     Move = 0,
     Text = 1,
     Line = 2,
@@ -15,21 +18,26 @@ pub enum Tool {
 
 pub struct Editor {
     pages: Rc<RefCell<Pages>>,
-    tool_selected: Tool,
+    tool_selected: ToolType,
 }
 
 impl Editor {
     pub fn new(pages: Rc<RefCell<Pages>>) -> Editor {
         Editor {
             pages,
-            tool_selected: Tool::Move,
+            tool_selected: ToolType::Move,
         }
     }
-    pub fn get_tool(&self) -> Tool {
+
+    pub fn borrow_pages(&self) -> Ref<'_, Pages> {
+        self.pages.borrow()
+    }
+
+    pub fn get_tool(&self) -> ToolType {
         self.tool_selected
     }
 
-    pub fn set_tool(&mut self, tool: Tool) {
+    pub fn set_tool(&mut self, tool: ToolType) {
         self.tool_selected = tool
     }
 

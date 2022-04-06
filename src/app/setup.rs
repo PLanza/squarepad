@@ -1,6 +1,6 @@
 use super::button::Button;
 use super::menu::Menu;
-use crate::editor::{Editor, Tool};
+use crate::editor::{Editor, ToolType};
 use crate::position::Position;
 use crate::renderer::Renderer;
 
@@ -27,7 +27,7 @@ pub fn setup_tool_menu(
         Rc::clone(&editor),
     )?;
     move_tool_button.set_on_click(Box::new(|button| {
-        button.editor.borrow_mut().set_tool(Tool::Move);
+        button.editor.borrow_mut().set_tool(ToolType::Move);
         Ok(())
     }));
 
@@ -40,7 +40,7 @@ pub fn setup_tool_menu(
         Rc::clone(&editor),
     )?;
     text_tool_button.set_on_click(Box::new(|button| {
-        button.editor.borrow_mut().set_tool(Tool::Text);
+        button.editor.borrow_mut().set_tool(ToolType::Text);
         Ok(())
     }));
     tool_menu.add_button(text_tool_button);
@@ -52,7 +52,7 @@ pub fn setup_tool_menu(
         Rc::clone(&editor),
     )?;
     line_tool_button.set_on_click(Box::new(|button| {
-        button.editor.borrow_mut().set_tool(Tool::Line);
+        button.editor.borrow_mut().set_tool(ToolType::Line);
         Ok(())
     }));
     tool_menu.add_button(line_tool_button);
@@ -64,7 +64,7 @@ pub fn setup_tool_menu(
         Rc::clone(&editor),
     )?;
     bullet_tool_button.set_on_click(Box::new(|button| {
-        button.editor.borrow_mut().set_tool(Tool::Bullet);
+        button.editor.borrow_mut().set_tool(ToolType::Bullet);
         Ok(())
     }));
     tool_menu.add_button(bullet_tool_button);
@@ -76,7 +76,7 @@ pub fn setup_tool_menu(
         Rc::clone(&editor),
     )?;
     math_tool_button.set_on_click(Box::new(|button| {
-        button.editor.borrow_mut().set_tool(Tool::Math);
+        button.editor.borrow_mut().set_tool(ToolType::Math);
         Ok(())
     }));
     tool_menu.add_button(math_tool_button);
@@ -88,7 +88,7 @@ pub fn setup_tool_menu(
         Rc::clone(&editor),
     )?;
     code_tool_button.set_on_click(Box::new(|button| {
-        button.editor.borrow_mut().set_tool(Tool::Code);
+        button.editor.borrow_mut().set_tool(ToolType::Code);
         Ok(())
     }));
     tool_menu.add_button(code_tool_button);
