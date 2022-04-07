@@ -91,6 +91,7 @@ impl Menu {
         self.buttons.push(new_button)
     }
 
+    // Passes on the event to all the buttons it contains
     pub fn handle_button_events(
         &mut self,
         event: &Event,

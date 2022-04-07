@@ -17,11 +17,12 @@ pub struct Cursor {
 impl Cursor {
     pub fn new(editor: Rc<RefCell<Editor>>) -> Cursor {
         Cursor {
-            position: Position::FreeOnScreen(500, 500),
+            position: Position::FreeOnScreen(0, 0),
             editor,
         }
     }
 
+    // Only updates the position of the cursor
     pub fn handle_event(&mut self, e: &Event) -> Result<(), String> {
         match e {
             Event::MouseMotion { x, y, .. } => {
@@ -34,10 +35,10 @@ impl Cursor {
 }
 
 impl Drawable for Cursor {
-    // Draws a square around the square where the cursor finds itself in
+    // Draws a box around the square where the cursor finds itself in
     fn draw(&self, renderer: &mut Renderer) -> Result<(), String> {
         let editor = self.editor.borrow();
-        let pages = editor.borrow_pages();
+        let pages = editor.get_pages();
         let square_size = pages.square_size();
 
         // The FreeOnScreen position of the page that the cursor is on top of
@@ -51,40 +52,41 @@ impl Drawable for Cursor {
             }
         }
 
+        // Vector math to calculate position of cursor box
         let d = Position::add(self.position, -p.x(), -p.y());
         let s = Position::add(
             p,
-            (d.x() / (square_size as i32 + 1)) * (square_size as i32 + 1),
-            (d.y() / (square_size as i32 + 1)) * (square_size as i32 + 1),
+            (d.x() / square_size as i32) * square_size as i32,
+            (d.y() / square_size as i32) * square_size as i32,
         );
 
         renderer.draw_rect(s, 2, (square_size, square_size), Color::BLACK)?;
 
         // Draw semi transparent rectangles in the four directions,
-        // from the cursor square to the edeges of the page
+        // from the cursor box to the edeges of the page
         renderer.draw_fill_rect(
             Position::FreeOnScreen(s.x(), p.y()),
-            (square_size, (s.y() - p.y()) as u32),
+            (square_size - 1, (s.y() - p.y()) as u32),
             Color::RGBA(0, 0, 0, 50),
         )?;
         renderer.draw_fill_rect(
             Position::FreeOnScreen(p.x(), s.y()),
-            ((s.x() - p.x()) as u32, square_size),
+            ((s.x() - p.x()) as u32, square_size - 1),
             Color::RGBA(0, 0, 0, 50),
         )?;
         renderer.draw_fill_rect(
-            Position::FreeOnScreen(s.x(), s.y() + square_size as i32 + 1),
+            Position::FreeOnScreen(s.x(), s.y() + square_size as i32),
             (
-                square_size,
-                (p.y() + pages.page_height() as i32 - s.y()) as u32 - square_size,
+                square_size - 1,
+                (p.y() + pages.page_height() as i32 - s.y()) as u32 - (square_size - 1),
             ),
             Color::RGBA(0, 0, 0, 50),
         )?;
         renderer.draw_fill_rect(
-            Position::FreeOnScreen(s.x() + square_size as i32 + 1, s.y()),
+            Position::FreeOnScreen(s.x() + square_size as i32, s.y()),
             (
-                (p.x() + pages.page_width() as i32 - s.x()) as u32 - square_size,
-                square_size,
+                (p.x() + pages.page_width() as i32 - s.x()) as u32 - (square_size - 1),
+                square_size - 1,
             ),
             Color::RGBA(0, 0, 0, 50),
         )?;

@@ -1,5 +1,6 @@
 use super::button::Button;
 use super::menu::Menu;
+use super::pages::PageStyle;
 use crate::editor::{Editor, ToolType};
 use crate::position::Position;
 use crate::renderer::Renderer;
@@ -7,6 +8,68 @@ use crate::renderer::Renderer;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
+
+// This file just sets up various UI components so that they don't clutter the App's setup function
+
+pub fn setup_bottom_menu(
+    renderer: &mut Renderer,
+    editor: Rc<RefCell<Editor>>,
+) -> Result<Menu, String> {
+    // Bottom menu will include options affecting page style
+    let mut bottom_menu = Menu::new(
+        Position::AnchoredLeftBottom(0, 30),
+        (renderer.dimensions().0, 30),
+        crate::app::menu::MenuAlignment::Horizontal,
+    );
+    bottom_menu.set_border_thickness(1);
+    bottom_menu.set_padding((30, 0));
+
+    // Toggles between white and beige backgrounds
+    let mut page_style_button = Button::new(
+        Position::FreeOnScreen(0, 0),
+        Path::new("assets/page_style_button.png"),
+        renderer,
+        Rc::clone(&editor),
+    )?;
+
+    page_style_button.set_on_click(Box::new(|button| {
+        let mut editor = button.editor.borrow_mut();
+
+        match editor.get_pages().style() {
+            PageStyle::WhiteSquared => editor.set_pages_style(PageStyle::BeigeSquared),
+            PageStyle::WhitePlain => editor.set_pages_style(PageStyle::BeigePlain),
+            PageStyle::BeigeSquared => editor.set_pages_style(PageStyle::WhiteSquared),
+            PageStyle::BeigePlain => editor.set_pages_style(PageStyle::WhitePlain),
+        }
+
+        Ok(())
+    }));
+    bottom_menu.add_button(page_style_button);
+
+    // Toggles the grid
+    let mut grid_toggle_button = Button::new(
+        Position::FreeOnScreen(0, 0),
+        Path::new("assets/grid_toggle_button.png"),
+        renderer,
+        Rc::clone(&editor),
+    )?;
+
+    grid_toggle_button.set_on_click(Box::new(|button| {
+        let mut editor = button.editor.borrow_mut();
+
+        match editor.get_pages().style() {
+            PageStyle::WhiteSquared => editor.set_pages_style(PageStyle::WhitePlain),
+            PageStyle::WhitePlain => editor.set_pages_style(PageStyle::WhiteSquared),
+            PageStyle::BeigeSquared => editor.set_pages_style(PageStyle::BeigePlain),
+            PageStyle::BeigePlain => editor.set_pages_style(PageStyle::BeigeSquared),
+        }
+
+        Ok(())
+    }));
+    bottom_menu.add_button(grid_toggle_button);
+
+    Ok(bottom_menu)
+}
 
 pub fn setup_tool_menu(
     renderer: &mut Renderer,

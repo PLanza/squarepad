@@ -32,7 +32,7 @@ impl SdlContext {
 
 fn main() -> Result<(), String> {
     let sdl_context = SdlContext::init()?;
-    let mut app = App::init(&sdl_context)?;
+    let app = App::init(&sdl_context)?;
 
     app.run()?;
 

@@ -11,9 +11,10 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::surface::Surface;
 
-const SQUARE_SIZE: u32 = 30; // In pixels squared
-pub const PAGE_PADDING: i32 = 200;
+const SQUARE_SIZE: u32 = 31; // In pixels squared
+pub const PAGE_PADDING: i32 = 200; // Spacing between pages
 
+// Order of page styles needs to be consistent everywhere
 #[derive(Clone, Copy)]
 pub enum PageStyle {
     WhiteSquared = 0,
@@ -33,22 +34,24 @@ impl PageStyle {
     }
 }
 
+// The surface where everything is written on
 pub struct Pages {
     pub id: Uuid,
     position: Position,
     page_size: (u32, u32), // In number of squares, 30 x 42
-    pages: u32,
-    square_size: u32,
+    pages: u32,            // The number of pages
+    square_size: u32,      // Inside of the square not counting the outline in pixels squared
     style: PageStyle,
 }
 
 impl Pages {
     // Create the page surface given a sheet image and a page size
     fn create_surface(page_size: (u32, u32), image_path: &Path) -> Result<Surface, String> {
+        // Page images come in 5x5 squares that need to be stitched together
         let src = Surface::from_file(image_path)?;
         let mut surface = Surface::new(
-            (SQUARE_SIZE + 1) * page_size.0 - 1,
-            (SQUARE_SIZE + 1) * page_size.1 - 1,
+            SQUARE_SIZE * page_size.0 - 1,
+            SQUARE_SIZE * page_size.1 - 1,
             src.pixel_format_enum(),
         )?;
 
@@ -56,29 +59,25 @@ impl Pages {
         while i < page_size.1 as i32 {
             // Change clip height if near the edge
             let h = if i <= (page_size.1 - 5) as i32 {
-                5 * (SQUARE_SIZE + 1)
+                5 * SQUARE_SIZE
             } else {
-                (page_size.1 % 5) * (SQUARE_SIZE + 1) - 1
+                (page_size.1 % 5) * SQUARE_SIZE - 1
             };
 
             let mut j = 0;
             while j < page_size.0 as i32 {
                 // Change clip width if near the edge
                 let w = if j <= (page_size.0 - 5) as i32 {
-                    5 * (SQUARE_SIZE + 1)
+                    5 * SQUARE_SIZE
                 } else {
-                    (page_size.0 % 5) * (SQUARE_SIZE + 1) - 1
+                    (page_size.0 % 5) * SQUARE_SIZE - 1
                 };
 
+                // Copy part of the image onto the surface
                 src.blit(
                     Rect::new(0, 0, w, h),
                     &mut surface,
-                    Rect::new(
-                        j * (SQUARE_SIZE as i32 + 1),
-                        i * (SQUARE_SIZE as i32 + 1),
-                        w,
-                        h,
-                    ),
+                    Rect::new(j * SQUARE_SIZE as i32, i * SQUARE_SIZE as i32, w, h),
                 )?;
 
                 j += 5;
@@ -98,8 +97,9 @@ impl Pages {
         let beige_squared_sfc = Pages::create_surface(page_size, PageStyle::BeigeSquared.path())?;
         let beige_plain_sfc = Pages::create_surface(page_size, PageStyle::BeigePlain.path())?;
 
-        renderer.create_texture(
+        renderer.create_textures(
             id,
+            // Preserves original ordering
             vec![
                 &white_squared_sfc,
                 &white_plain_sfc,
@@ -127,11 +127,11 @@ impl Pages {
     }
 
     pub fn page_width(&self) -> u32 {
-        self.page_size.0 * (self.square_size + 1) - 1
+        self.page_size.0 * self.square_size - 1
     }
 
     pub fn page_height(&self) -> u32 {
-        self.page_size.1 * (self.square_size + 1) - 1
+        self.page_size.1 * self.square_size - 1
     }
 
     pub fn total_height(&self) -> u32 {

@@ -37,7 +37,7 @@ impl<'c, 't> Renderer<'c, 't> {
         }
     }
 
-    pub(crate) fn create_texture(
+    pub(crate) fn create_textures(
         &mut self,
         id: Uuid,
         surfaces: Vec<&Surface>,
@@ -79,9 +79,10 @@ impl<'c, 't> Renderer<'c, 't> {
         self.camera = rect
     }
 
-    pub fn scroll(&mut self, scroll: i32) {
+    // scrolls camera by dy amount
+    pub fn scroll(&mut self, dy: i32) {
         // Keep the scrolling within the pages
-        let new_y = ((self.camera.y - scroll * 62).max(0)).min(self.scroll_max);
+        let new_y = ((self.camera.y - dy * 62).max(0)).min(self.scroll_max);
 
         self.camera = Rect::new(
             self.camera.x,
@@ -95,6 +96,7 @@ impl<'c, 't> Renderer<'c, 't> {
         self.scroll_max = new_max
     }
 
+    // Draws a texture associated with an object_id and the index into its texture Vec
     pub fn draw_texture(
         &mut self,
         object_id: Uuid,
@@ -128,22 +130,6 @@ impl<'c, 't> Renderer<'c, 't> {
             options.flip_v,
         )?;
 
-        Ok(())
-    }
-
-    pub fn draw_line(
-        &mut self,
-        start: Position,
-        end: Position,
-        color: Color,
-    ) -> Result<(), String> {
-        self.canvas.set_draw_color(color);
-        let (start, end) = (
-            start.to_free_on_screen(Some(self.dimensions()), Some(self.camera))?,
-            end.to_free_on_screen(Some(self.dimensions()), Some(self.camera))?,
-        );
-
-        self.canvas.draw_line(start, end)?;
         Ok(())
     }
 

@@ -1,16 +1,19 @@
 use sdl2::rect::Point;
 use sdl2::rect::Rect;
 
+// Allows for different coordinate systems to be used interchangably
 #[derive(Clone, Copy, Debug)]
 pub enum Position {
     AnchoredLeftBottom(i32, i32), // Offset from bottom and left edges of screen
     AnchoredRightTop(i32, i32),   // Offset from top and right edges of screen
     AnchoredRightBottom(i32, i32), // Offset from borrom and right edge of screen
+    FreeOnScreen(i32, i32),       // Same as AnchoredTopLeft, serves as default
     FreeOnWorld(i32, i32),
-    FreeOnScreen(i32, i32), // Same as AnchoredTopLeft
 }
 
 impl Position {
+    // Converts from other coordinate systems to FreeOnScreen
+    // This is the defualt system as it is the same one that canvas uses
     pub fn to_free_on_screen(
         self,
         screen_dimensions: Option<(u32, u32)>,
@@ -58,7 +61,7 @@ impl Position {
     }
 
     // Adds (dx, dy) to any position from the origin at the top-left corner
-    // If dx and dy are both positive, this will result in a translate down and to the right
+    // If dx and dy are both positive, this will result in a translation down and to the right
     pub fn add(p1: Position, dx: i32, dy: i32) -> Position {
         match p1 {
             Position::AnchoredLeftBottom(x, y) => Position::AnchoredLeftBottom(x + dx, y - dy),
@@ -67,10 +70,6 @@ impl Position {
             Position::FreeOnWorld(x, y) => Position::FreeOnWorld(x + dx, y + dy),
             Position::FreeOnScreen(x, y) => Position::FreeOnScreen(x + dx, y + dy),
         }
-    }
-
-    pub fn to_rect(self, size: (u32, u32)) -> Rect {
-        Rect::new(self.x(), self.y(), size.0, size.1)
     }
 }
 

@@ -37,6 +37,7 @@ impl Button {
         renderer: &mut Renderer,
         editor: Rc<RefCell<Editor>>,
     ) -> Result<Button, String> {
+        // Button images are split horizontally into three equal parts
         let src = Surface::from_file(image_path)?;
         let (sfc_w, sfc_h) = (src.width() / 3, src.height());
 
@@ -59,8 +60,8 @@ impl Button {
 
         let id = Uuid::new_v4();
 
-        // Each button has 3 associated surfaces that will be displayed depending on their state
-        renderer.create_texture(id, vec![&surface_off, &surface_hover, &surface_click])?;
+        // Each button has 3 associated textures that will be displayed depending on their state
+        renderer.create_textures(id, vec![&surface_off, &surface_hover, &surface_click])?;
 
         Ok(Button {
             id,
@@ -115,6 +116,7 @@ impl Button {
     // Requires screen_dimensions because mouse position is FreeOnScreen which may need to be
     // converted to button position as AnchoredOnScreen
     pub fn handle_event(&mut self, e: &Event, screen_dimensions: (u32, u32)) -> Result<(), String> {
+        // Controls button "state machine"
         match e {
             Event::MouseMotion { x, y, .. } => {
                 if self.contains_point(*x, *y, screen_dimensions)?
@@ -161,7 +163,7 @@ impl Drawable for Button {
             flip_v: false,
         };
 
-        // Shade over button when hover or clicked
+        // Draws texture depending on ButtonState
         match self.state {
             ButtonState::OFF => renderer.draw_texture(self.id, 0, options),
             ButtonState::HOVER => renderer.draw_texture(self.id, 1, options),
