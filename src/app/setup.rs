@@ -27,7 +27,7 @@ pub fn setup_bottom_menu(
     // Toggles between white and beige backgrounds
     let mut page_style_button = Button::new(
         Position::FreeOnScreen(0, 0),
-        Path::new("assets/page_style_button.png"),
+        Path::new("assets/images/page_style_button.png"),
         renderer,
         Rc::clone(&editor),
     )?;
@@ -49,7 +49,7 @@ pub fn setup_bottom_menu(
     // Toggles the grid
     let mut grid_toggle_button = Button::new(
         Position::FreeOnScreen(0, 0),
-        Path::new("assets/grid_toggle_button.png"),
+        Path::new("assets/images/grid_toggle_button.png"),
         renderer,
         Rc::clone(&editor),
     )?;
@@ -85,7 +85,7 @@ pub fn setup_tool_menu(
 
     let mut move_tool_button = Button::new(
         Position::FreeOnScreen(0, 0),
-        Path::new("assets/move_tool_button.png"),
+        Path::new("assets/images/move_tool_button.png"),
         renderer,
         Rc::clone(&editor),
     )?;
@@ -98,7 +98,7 @@ pub fn setup_tool_menu(
 
     let mut text_tool_button = Button::new(
         Position::FreeOnScreen(0, 0),
-        Path::new("assets/text_tool_button.png"),
+        Path::new("assets/images/text_tool_button.png"),
         renderer,
         Rc::clone(&editor),
     )?;
@@ -110,7 +110,7 @@ pub fn setup_tool_menu(
 
     let mut line_tool_button = Button::new(
         Position::FreeOnScreen(0, 0),
-        Path::new("assets/line_tool_button.png"),
+        Path::new("assets/images/line_tool_button.png"),
         renderer,
         Rc::clone(&editor),
     )?;
@@ -122,7 +122,7 @@ pub fn setup_tool_menu(
 
     let mut bullet_tool_button = Button::new(
         Position::FreeOnScreen(0, 0),
-        Path::new("assets/bullet_tool_button.png"),
+        Path::new("assets/images/bullet_tool_button.png"),
         renderer,
         Rc::clone(&editor),
     )?;
@@ -134,7 +134,7 @@ pub fn setup_tool_menu(
 
     let mut math_tool_button = Button::new(
         Position::FreeOnScreen(0, 0),
-        Path::new("assets/math_tool_button.png"),
+        Path::new("assets/images/math_tool_button.png"),
         renderer,
         Rc::clone(&editor),
     )?;
@@ -146,7 +146,7 @@ pub fn setup_tool_menu(
 
     let mut code_tool_button = Button::new(
         Position::FreeOnScreen(0, 0),
-        Path::new("assets/code_tool_button.png"),
+        Path::new("assets/images/code_tool_button.png"),
         renderer,
         Rc::clone(&editor),
     )?;

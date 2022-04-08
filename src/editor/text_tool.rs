@@ -1,3 +1,5 @@
+use crate::renderer::Renderer;
+
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, TextInputUtil};
 
@@ -22,7 +24,7 @@ impl TextTool {
         self.text_input.stop()
     }
 
-    pub fn handle_event(&mut self, event: &Event) {
+    pub fn handle_event(&mut self, event: &Event, renderer: &mut Renderer) {
         match event {
             Event::TextInput { text, .. } => {
                 self.input_string.push_str(text);

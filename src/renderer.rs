@@ -5,33 +5,37 @@ use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
 use sdl2::render::{Texture, TextureCreator, WindowCanvas};
 use sdl2::surface::Surface;
+use sdl2::ttf::{Font, FontStyle};
 use sdl2::video::WindowContext;
 
 use std::collections::HashMap;
 
 use uuid::Uuid;
 
-pub struct Renderer<'c, 't> {
+pub struct Renderer<'c, 'tc, 'ttf> {
     canvas: &'c mut WindowCanvas,
-    tex_creator: &'t TextureCreator<WindowContext>,
-    textures: HashMap<Uuid, Vec<Texture<'t>>>,
+    tex_creator: &'tc TextureCreator<WindowContext>,
+    textures: HashMap<Uuid, Vec<Texture<'tc>>>,
+    fonts: HashMap<String, Font<'ttf, 'ttf>>,
     camera: Rect,
     scroll_max: i32,
 }
 
-impl<'c, 't> Renderer<'c, 't> {
+impl<'c, 'tc, 'ttf> Renderer<'c, 'tc, 'ttf> {
     // Only one Renderer will ever be constructed. The default settings set the window to be
     // maximized to the default display, allowing the window to be resized.
     pub(super) fn new(
         canvas: &'c mut WindowCanvas,
-        tex_creator: &'t TextureCreator<WindowContext>,
-    ) -> Renderer<'c, 't> {
+        tex_creator: &'tc TextureCreator<WindowContext>,
+        fonts: HashMap<String, Font<'ttf, 'ttf>>,
+    ) -> Renderer<'c, 'tc, 'ttf> {
         let camera = Rect::new(0, 0, canvas.window().size().0, canvas.window().size().1);
 
         Renderer {
             canvas,
             tex_creator,
             textures: HashMap::new(),
+            fonts,
             camera,
             scroll_max: 0,
         }
@@ -51,6 +55,51 @@ impl<'c, 't> Renderer<'c, 't> {
         }
 
         self.textures.insert(id, textures);
+
+        println!(
+            "{:08b}, {:08b}, {:08b}",
+            FontStyle::BOLD.bits(),
+            FontStyle::ITALIC.bits(),
+            FontStyle::NORMAL.bits()
+        );
+
+        Ok(())
+    }
+
+    pub(crate) fn create_text(
+        &mut self,
+        id: Uuid,
+        text: String,
+        font_name: String,
+        font_style: FontStyle,
+        point: u16,
+        color: Color,
+    ) -> Result<(), String> {
+        let mut font_name = font_name;
+        if font_style.bits() & 1 == 1 {
+            font_name.push_str("-Bold");
+            if font_style.bits() & 2 == 2 {
+                font_name.push_str("Italic");
+            }
+        } else if font_style.bits() & 2 == 2 {
+            font_name.push_str("-Italic");
+        }
+        font_name.push('_');
+        font_name.push_str(&point.to_string());
+
+        match self.fonts.get(&font_name) {
+            Some(font) => {
+                let text_surface = font
+                    .render(&text)
+                    .blended(color)
+                    .map_err(|e| e.to_string())?;
+                let texture = Texture::from_surface(&text_surface, &self.tex_creator)
+                    .map_err(|e| e.to_string())?;
+
+                self.textures.insert(id, vec![texture]);
+            }
+            None => return Err("Error retrieving font.".to_string()),
+        }
 
         Ok(())
     }

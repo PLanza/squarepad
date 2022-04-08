@@ -14,6 +14,7 @@ use crate::renderer::Renderer;
 use crate::SdlContext;
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::path::Path;
 use std::rc::Rc;
 
@@ -23,18 +24,20 @@ use sdl2::keyboard::TextInputUtil;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{TextureCreator, WindowCanvas};
+use sdl2::ttf::Font;
 use sdl2::video::WindowContext;
 
 // This struct controls the setup up and running stages of the application
-pub struct App {
+pub struct App<'a> {
     canvas: WindowCanvas,
     tex_creator: TextureCreator<WindowContext>,
     event_pump: sdl2::EventPump,
     text_input: TextInputUtil, // Only used by the text tool
     clipboard: ClipboardUtil,  // Passed on to the editor which handles it
+    fonts: HashMap<String, Font<'a, 'a>>,
 }
 
-impl App {
+impl<'a> App<'a> {
     // Initializes the application
     pub fn init(sdl_context: &SdlContext) -> Result<App, String> {
         let display_bounds = sdl_context.video_subsystem.display_usable_bounds(0)?;
@@ -56,23 +59,69 @@ impl App {
         let tex_creator = canvas.texture_creator();
         let event_pump = sdl_context.sdl.event_pump()?;
 
+        // String has format FontName-Style_Point
+        let mut font_map = HashMap::new();
+        let points: Vec<u16> = vec![12, 16, 24, 32, 36, 48, 60, 72];
+
+        // Load all the fonts in assets/fonts
+        for entry in Path::new("assets/fonts")
+            .read_dir()
+            .map_err(|e| e.to_string())?
+        {
+            match entry {
+                Ok(folder) => {
+                    for entry in folder.path().read_dir().map_err(|e| e.to_string())? {
+                        match entry {
+                            Ok(font) => {
+                                if !font.path().extension().unwrap().eq_ignore_ascii_case("ttf") {
+                                    continue;
+                                }
+
+                                let mut font_name = font
+                                    .path()
+                                    .file_stem()
+                                    .unwrap()
+                                    .to_str()
+                                    .unwrap()
+                                    .to_string();
+                                for point in &points {
+                                    let temp = font_name.clone();
+                                    font_name.push('_');
+                                    font_name.push_str(&point.to_string());
+                                    font_map.insert(
+                                        font_name,
+                                        sdl_context.ttf.load_font(font.path(), *point)?,
+                                    );
+                                    font_name = temp;
+                                }
+                            }
+                            Err(e) => return Err(e.to_string()),
+                        }
+                    }
+                }
+                Err(e) => return Err(e.to_string()),
+            }
+        }
+
         Ok(App {
             canvas,
             tex_creator,
             event_pump,
+            fonts: font_map,
             text_input: sdl_context.video_subsystem.text_input(),
             clipboard: sdl_context.video_subsystem.clipboard(),
         })
     }
 
     // Sets up the renderer and all the application's UI components
-    fn setup<'c, 't>(
+    fn setup<'c, 'tc, 'ttf>(
         canvas: &'c mut WindowCanvas,
-        tex_creator: &'t TextureCreator<WindowContext>,
+        tex_creator: &'tc TextureCreator<WindowContext>,
         text_input: TextInputUtil,
         clipboard: ClipboardUtil,
-    ) -> Result<(Renderer<'c, 't>, AppComponents), String> {
-        let mut renderer = Renderer::new(canvas, tex_creator);
+        fonts: HashMap<String, Font<'ttf, 'ttf>>,
+    ) -> Result<(Renderer<'c, 'tc, 'ttf>, AppComponents), String> {
+        let mut renderer = Renderer::new(canvas, tex_creator, fonts);
 
         // Pages will be handed off to the editor which will perform all changes to it
         let pages = Pages::new((42, 59), &mut renderer)?;
@@ -80,7 +129,7 @@ impl App {
 
         let mut add_page_button = Button::new(
             Position::AnchoredRightBottom(220, 140),
-            Path::new("assets/add_page_button.png"),
+            Path::new("assets/images/add_page_button.png"),
             &mut renderer,
             Rc::clone(&editor),
         )?;
@@ -93,7 +142,7 @@ impl App {
 
         let mut remove_page_button = Button::new(
             Position::AnchoredRightBottom(120, 140),
-            Path::new("assets/remove_page_button.png"),
+            Path::new("assets/images/remove_page_button.png"),
             &mut renderer,
             Rc::clone(&editor),
         )?;
@@ -127,6 +176,7 @@ impl App {
             &self.tex_creator,
             self.text_input,
             self.clipboard,
+            self.fonts,
         )?;
 
         // The main run loop
@@ -146,8 +196,8 @@ impl App {
                     },
                     Event::MouseWheel { y, .. } => renderer.scroll(y),
                     _ => {
-                        ac.cursor.handle_event(&event)?;
-                        ac.editor.borrow_mut().handle_event(&event)?;
+                        ac.cursor.handle_event(&event, renderer.camera())?;
+                        ac.editor.borrow_mut().handle_event(&event, &mut renderer)?;
 
                         for menu in &mut ac.menus {
                             menu.handle_button_events(&event, renderer.dimensions())?;

@@ -26,10 +26,10 @@ pub enum PageStyle {
 impl PageStyle {
     pub fn path(&self) -> &Path {
         Path::new(match *self {
-            PageStyle::WhiteSquared => "assets/white_squared.png",
-            PageStyle::WhitePlain => "assets/white_plain.png",
-            PageStyle::BeigeSquared => "assets/beige_squared.png",
-            PageStyle::BeigePlain => "assets/beige_plain.png",
+            PageStyle::WhiteSquared => "assets/images/white_squared.png",
+            PageStyle::WhitePlain => "assets/images/white_plain.png",
+            PageStyle::BeigeSquared => "assets/images/beige_squared.png",
+            PageStyle::BeigePlain => "assets/images/beige_plain.png",
         })
     }
 }

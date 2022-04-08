@@ -4,6 +4,7 @@ pub mod app;
 pub mod cursor;
 pub mod drawable;
 pub mod editor;
+pub mod mark;
 pub mod position;
 pub mod renderer;
 

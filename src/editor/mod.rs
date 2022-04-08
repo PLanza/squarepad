@@ -2,6 +2,7 @@ pub mod text_tool;
 
 use self::text_tool::TextTool;
 use crate::app::pages::{PageStyle, Pages};
+use crate::renderer::Renderer;
 
 use sdl2::clipboard::ClipboardUtil;
 use sdl2::event::Event;
@@ -67,7 +68,7 @@ impl Editor {
         self.pages.remove_page()
     }
 
-    pub fn handle_event(&mut self, event: &Event) -> Result<(), String> {
+    pub fn handle_event(&mut self, event: &Event, renderer: &mut Renderer) -> Result<(), String> {
         match event {
             Event::MouseButtonUp { .. } => {
                 if self.tool_selected as usize == 1 {
@@ -85,7 +86,7 @@ impl Editor {
             },
             _ => (),
         }
-        self.text_tool.handle_event(event);
+        self.text_tool.handle_event(event, renderer);
 
         Ok(())
     }
