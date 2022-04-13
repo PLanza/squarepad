@@ -1,8 +1,10 @@
+use crate::app::pages::Pages;
+
 use sdl2::rect::Point;
 use sdl2::rect::Rect;
 
 // Allows for different coordinate systems to be used interchangably
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub enum Position {
     AnchoredLeftBottom(i32, i32), // Offset from bottom and left edges of screen
     AnchoredRightTop(i32, i32),   // Offset from top and right edges of screen
@@ -62,8 +64,8 @@ impl Position {
 
     // Adds (dx, dy) to any position from the origin at the top-left corner
     // If dx and dy are both positive, this will result in a translation down and to the right
-    pub fn add(p1: Position, dx: i32, dy: i32) -> Position {
-        match p1 {
+    pub fn add(p: Position, dx: i32, dy: i32) -> Position {
+        match p {
             Position::AnchoredLeftBottom(x, y) => Position::AnchoredLeftBottom(x + dx, y - dy),
             Position::AnchoredRightTop(x, y) => Position::AnchoredRightTop(x - dx, y + dy),
             Position::AnchoredRightBottom(x, y) => Position::AnchoredRightBottom(x - dx, y - dy),
@@ -84,3 +86,39 @@ impl Into<Point> for Position {
         Point::new(self.x(), self.y())
     }
 }
+
+#[derive(Clone, Copy, Debug, Hash)]
+pub struct PageSquare {
+    pub page: u32,
+    pub square: (u32, u32),
+    pub position: Position, // The FreeOnWorld position
+}
+
+// Represents the position of a square on a particular page
+impl PageSquare {
+    pub fn new(page: u32, square: (u32, u32), pages: &Pages) -> Result<PageSquare, String> {
+        let p = pages.get_page_position(page);
+        if square.0 >= pages.page_squares().0 || square.1 >= pages.page_squares().1 {
+            return Err("PageSquare out of bounds.".to_string());
+        }
+
+        let position = Position::add(
+            p,
+            (square.0 * pages.square_size()) as i32,
+            (square.1 * pages.square_size()) as i32,
+        );
+        Ok(PageSquare {
+            page,
+            square,
+            position,
+        })
+    }
+}
+
+impl PartialEq for PageSquare {
+    fn eq(&self, other: &PageSquare) -> bool {
+        self.page == other.page && self.square.eq(&other.square)
+    }
+}
+
+impl Eq for PageSquare {}

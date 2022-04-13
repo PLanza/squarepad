@@ -1,19 +1,21 @@
 use crate::drawable::Drawable;
 use crate::editor::Editor;
-use crate::position::Position;
+use crate::position::{PageSquare, Position};
 use crate::renderer::Renderer;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use sdl2::event::Event;
+use sdl2::mouse::MouseButton;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 
 pub struct Cursor {
     position: Position,
     editor: Rc<RefCell<Editor>>,
-    page_square: Option<(u32, (u32, u32))>, // (page#, x, y) of the square that the cursor is on
+    current_page_square: Option<PageSquare>, // (page#, x, y) of the square that the cursor is on
+    click_page_square: Option<PageSquare>,
 }
 
 impl Cursor {
@@ -21,13 +23,15 @@ impl Cursor {
         Cursor {
             position: Position::FreeOnScreen(0, 0),
             editor,
-            page_square: None,
+            current_page_square: None,
+            click_page_square: None,
         }
     }
 
     // Only updates the position of the cursor
     pub fn handle_event(&mut self, e: &Event, camera: Rect) -> Result<(), String> {
         match e {
+            // Updates cursor position
             Event::MouseMotion { x, y, .. } => {
                 self.position = Position::FreeOnScreen(*x, *y);
 
@@ -36,7 +40,7 @@ impl Cursor {
                 let square_size = pages.square_size();
 
                 match pages.page_contains(self.position, camera) {
-                    None => self.page_square = None,
+                    None => self.current_page_square = None,
                     Some(i) => {
                         // The FreeOnScreen position of the page that the cursor is on top of
                         let p = pages
@@ -45,19 +49,46 @@ impl Cursor {
 
                         let d = Position::add(self.position, -p.x(), -p.y());
 
-                        self.page_square =
-                            Some((i, (d.x() as u32 / square_size, d.y() as u32 / square_size)));
+                        self.current_page_square = Some(PageSquare::new(
+                            i,
+                            (d.x() as u32 / square_size, d.y() as u32 / square_size),
+                            self.editor.borrow().get_pages(),
+                        )?);
                     }
                 }
 
+                Ok(())
+            }
+            Event::MouseButtonDown {
+                mouse_btn: MouseButton::Left,
+                ..
+            } => {
+                self.click_page_square = self.current_page_square;
+                Ok(())
+            }
+            Event::MouseButtonUp {
+                mouse_btn: MouseButton::Left,
+                ..
+            } => {
+                match self.current_page_square {
+                    Some(current) => match self.click_page_square {
+                        Some(click) => {
+                            if click.eq(&current) {
+                                self.editor.borrow_mut().handle_click(click)
+                            }
+                        }
+                        None => (),
+                    },
+                    None => (),
+                }
                 Ok(())
             }
             _ => Ok(()),
         }
     }
 
-    pub fn page_square(&self) -> Option<(u32, (u32, u32))> {
-        self.page_square
+    pub fn page_square(&self) -> Option<PageSquare> {
+        self.current_page_square
     }
 }
 

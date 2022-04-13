@@ -56,13 +56,6 @@ impl<'c, 'tc, 'ttf> Renderer<'c, 'tc, 'ttf> {
 
         self.textures.insert(id, textures);
 
-        println!(
-            "{:08b}, {:08b}, {:08b}",
-            FontStyle::BOLD.bits(),
-            FontStyle::ITALIC.bits(),
-            FontStyle::NORMAL.bits()
-        );
-
         Ok(())
     }
 

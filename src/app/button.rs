@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use sdl2::event::Event;
 use sdl2::image::LoadSurface;
+use sdl2::mouse::MouseButton;
 use sdl2::rect::Rect;
 use sdl2::surface::Surface;
 
@@ -130,13 +131,23 @@ impl Button {
                 }
                 Ok(())
             }
-            Event::MouseButtonDown { x, y, .. } => {
+            Event::MouseButtonDown {
+                x,
+                y,
+                mouse_btn: MouseButton::Left,
+                ..
+            } => {
                 if self.contains_point(*x, *y, screen_dimensions)? {
                     self.state = ButtonState::CLICKED;
                 }
                 Ok(())
             }
-            Event::MouseButtonUp { x, y, .. } => {
+            Event::MouseButtonUp {
+                x,
+                y,
+                mouse_btn: MouseButton::Left,
+                ..
+            } => {
                 if self.contains_point(*x, *y, screen_dimensions)?
                     && matches!(self.state, ButtonState::CLICKED)
                 {

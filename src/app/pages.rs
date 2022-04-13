@@ -38,39 +38,39 @@ impl PageStyle {
 pub struct Pages {
     pub id: Uuid,
     position: Position,
-    page_size: (u32, u32), // In number of squares, 30 x 42
-    pages: u32,            // The number of pages
-    square_size: u32,      // Inside of the square not counting the outline in pixels squared
+    page_squares: (u32, u32), // In number of squares, 30 x 42
+    pages: u32,               // The number of pages
+    square_size: u32,         // Inside of the square not counting the outline in pixels squared
     style: PageStyle,
 }
 
 impl Pages {
     // Create the page surface given a sheet image and a page size
-    fn create_surface(page_size: (u32, u32), image_path: &Path) -> Result<Surface, String> {
+    fn create_surface(page_squares: (u32, u32), image_path: &Path) -> Result<Surface, String> {
         // Page images come in 5x5 squares that need to be stitched together
         let src = Surface::from_file(image_path)?;
         let mut surface = Surface::new(
-            SQUARE_SIZE * page_size.0 - 1,
-            SQUARE_SIZE * page_size.1 - 1,
+            SQUARE_SIZE * page_squares.0 - 1,
+            SQUARE_SIZE * page_squares.1 - 1,
             src.pixel_format_enum(),
         )?;
 
         let mut i = 0;
-        while i < page_size.1 as i32 {
+        while i < page_squares.1 as i32 {
             // Change clip height if near the edge
-            let h = if i <= (page_size.1 - 5) as i32 {
+            let h = if i <= (page_squares.1 - 5) as i32 {
                 5 * SQUARE_SIZE
             } else {
-                (page_size.1 % 5) * SQUARE_SIZE - 1
+                (page_squares.1 % 5) * SQUARE_SIZE - 1
             };
 
             let mut j = 0;
-            while j < page_size.0 as i32 {
+            while j < page_squares.0 as i32 {
                 // Change clip width if near the edge
-                let w = if j <= (page_size.0 - 5) as i32 {
+                let w = if j <= (page_squares.0 - 5) as i32 {
                     5 * SQUARE_SIZE
                 } else {
-                    (page_size.0 % 5) * SQUARE_SIZE - 1
+                    (page_squares.0 % 5) * SQUARE_SIZE - 1
                 };
 
                 // Copy part of the image onto the surface
@@ -88,14 +88,16 @@ impl Pages {
         Ok(surface)
     }
 
-    pub fn new(page_size: (u32, u32), renderer: &mut Renderer) -> Result<Pages, String> {
+    pub fn new(page_squares: (u32, u32), renderer: &mut Renderer) -> Result<Pages, String> {
         let id = Uuid::new_v4();
 
         // Create all the page style textures to switch between them
-        let white_squared_sfc = Pages::create_surface(page_size, PageStyle::WhiteSquared.path())?;
-        let white_plain_sfc = Pages::create_surface(page_size, PageStyle::WhitePlain.path())?;
-        let beige_squared_sfc = Pages::create_surface(page_size, PageStyle::BeigeSquared.path())?;
-        let beige_plain_sfc = Pages::create_surface(page_size, PageStyle::BeigePlain.path())?;
+        let white_squared_sfc =
+            Pages::create_surface(page_squares, PageStyle::WhiteSquared.path())?;
+        let white_plain_sfc = Pages::create_surface(page_squares, PageStyle::WhitePlain.path())?;
+        let beige_squared_sfc =
+            Pages::create_surface(page_squares, PageStyle::BeigeSquared.path())?;
+        let beige_plain_sfc = Pages::create_surface(page_squares, PageStyle::BeigePlain.path())?;
 
         renderer.create_textures(
             id,
@@ -110,12 +112,16 @@ impl Pages {
 
         Ok(Pages {
             position: Position::FreeOnWorld(0, PAGE_PADDING),
-            page_size,
+            page_squares,
             square_size: SQUARE_SIZE,
             id,
             pages: 1,
             style: PageStyle::WhiteSquared,
         })
+    }
+
+    pub fn page_squares(&self) -> (u32, u32) {
+        self.page_squares
     }
 
     pub fn square_size(&self) -> u32 {
@@ -127,11 +133,11 @@ impl Pages {
     }
 
     pub fn page_width(&self) -> u32 {
-        self.page_size.0 * self.square_size - 1
+        self.page_squares.0 * self.square_size - 1
     }
 
     pub fn page_height(&self) -> u32 {
-        self.page_size.1 * self.square_size - 1
+        self.page_squares.1 * self.square_size - 1
     }
 
     pub fn total_height(&self) -> u32 {

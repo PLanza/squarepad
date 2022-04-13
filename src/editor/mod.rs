@@ -2,7 +2,13 @@ pub mod text_tool;
 
 use self::text_tool::TextTool;
 use crate::app::pages::{PageStyle, Pages};
+use crate::mark::{textbox::TextBox, Mark};
+use crate::position::PageSquare;
 use crate::renderer::Renderer;
+
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
 
 use sdl2::clipboard::ClipboardUtil;
 use sdl2::event::Event;
@@ -26,6 +32,7 @@ pub struct Editor {
     clipboard: ClipboardUtil,
     tool_selected: ToolType,
     text_tool: TextTool,
+    marks: HashMap<PageSquare, Rc<RefCell<dyn Mark>>>, // Could convert to 3D Vector
 }
 
 impl Editor {
@@ -35,6 +42,7 @@ impl Editor {
             tool_selected: ToolType::Move,
             text_tool: TextTool::new(text_input),
             clipboard,
+            marks: HashMap::new(),
         }
     }
 
@@ -70,11 +78,6 @@ impl Editor {
 
     pub fn handle_event(&mut self, event: &Event, renderer: &mut Renderer) -> Result<(), String> {
         match event {
-            Event::MouseButtonUp { .. } => {
-                if self.tool_selected as usize == 1 {
-                    self.text_tool.start_input();
-                }
-            }
             Event::KeyDown {
                 keycode: Some(Keycode::V),
                 keymod,
@@ -89,6 +92,21 @@ impl Editor {
         self.text_tool.handle_event(event, renderer);
 
         Ok(())
+    }
+
+    pub fn handle_click(&mut self, page_square: PageSquare) {
+        match self.tool_selected {
+            ToolType::Text => {
+                let text_box = Rc::new(RefCell::new(TextBox::new(
+                    page_square,
+                    "DejaVuSansMono".to_string(),
+                )));
+                self.text_tool.start_input(Rc::clone(&text_box));
+
+                self.marks.insert(page_square, text_box);
+            }
+            _ => (),
+        }
     }
 
     pub fn paste(&mut self) -> Result<(), String> {

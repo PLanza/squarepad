@@ -1,4 +1,8 @@
+use crate::mark::textbox::TextBox;
 use crate::renderer::Renderer;
+
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, TextInputUtil};
@@ -7,6 +11,7 @@ use sdl2::keyboard::{Keycode, TextInputUtil};
 pub struct TextTool {
     text_input: TextInputUtil, // May need to share this later with code tool
     input_string: String,
+    text_box: Option<Rc<RefCell<TextBox>>>,
 }
 
 impl TextTool {
@@ -14,13 +19,16 @@ impl TextTool {
         TextTool {
             text_input,
             input_string: String::new(),
+            text_box: None,
         }
     }
 
-    pub fn start_input(&self) {
+    pub fn start_input(&mut self, text_box: Rc<RefCell<TextBox>>) {
+        self.text_box = Some(text_box);
         self.text_input.start()
     }
-    pub fn stop_input(&self) {
+    pub fn stop_input(&mut self) {
+        self.text_box = None;
         self.text_input.stop()
     }
 
