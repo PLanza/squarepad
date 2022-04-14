@@ -11,7 +11,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::surface::Surface;
 
-const SQUARE_SIZE: u32 = 31; // In pixels squared
+pub const SQUARE_SIZE: u32 = 31; // In pixels squared
 pub const PAGE_PADDING: i32 = 200; // Spacing between pages
 
 // Order of page styles needs to be consistent everywhere

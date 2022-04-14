@@ -41,6 +41,37 @@ impl<'c, 'tc, 'ttf> Renderer<'c, 'tc, 'ttf> {
         }
     }
 
+    // Creates texture from a surface and adds it to vector associated with id at index
+    // If no index is given or index is out of bounds, then it appends the texture to the Vector
+    // If there is no entry in textures associated with id, then a new entry is inserted
+    pub fn create_texture(
+        &mut self,
+        id: Uuid,
+        index: Option<usize>,
+        surface: Surface,
+    ) -> Result<(), String> {
+        let texture =
+            Texture::from_surface(&surface, &self.tex_creator).map_err(|e| e.to_string())?;
+
+        match self.textures.get_mut(&id) {
+            Some(textures) => match index {
+                Some(i) => {
+                    if i < textures.len() {
+                        textures[i] = texture
+                    } else {
+                        textures.push(texture)
+                    }
+                }
+                None => textures.push(texture),
+            },
+            None => {
+                self.textures.insert(id, vec![texture]);
+            }
+        }
+
+        Ok(())
+    }
+
     pub(crate) fn create_textures(
         &mut self,
         id: Uuid,
@@ -59,16 +90,21 @@ impl<'c, 'tc, 'ttf> Renderer<'c, 'tc, 'ttf> {
         Ok(())
     }
 
+    // Creates text texture and adds it to textures at the entry associated with id
+    // If no index is given or if index is out of bounds, then it appends the texture to the vec
+    // If there is no entry in textures associated with id, then a new entry is inserted
     pub(crate) fn create_text(
         &mut self,
         id: Uuid,
-        text: String,
-        font_name: String,
+        texture_index: Option<usize>,
+        text: &String,
+        font_name: &String,
         font_style: FontStyle,
         point: u16,
         color: Color,
-    ) -> Result<(), String> {
-        let mut font_name = font_name;
+    ) -> Result<(u32, u32), String> {
+        // Get full font name with style
+        let mut font_name = font_name.clone();
         if font_style.bits() & 1 == 1 {
             font_name.push_str("-Bold");
             if font_style.bits() & 2 == 2 {
@@ -80,21 +116,90 @@ impl<'c, 'tc, 'ttf> Renderer<'c, 'tc, 'ttf> {
         font_name.push('_');
         font_name.push_str(&point.to_string());
 
-        match self.fonts.get(&font_name) {
-            Some(font) => {
-                let text_surface = font
-                    .render(&text)
-                    .blended(color)
-                    .map_err(|e| e.to_string())?;
-                let texture = Texture::from_surface(&text_surface, &self.tex_creator)
-                    .map_err(|e| e.to_string())?;
+        let font = self
+            .fonts
+            .get(&font_name)
+            .ok_or_else(|| "Error retrieving font.".to_string())?;
 
+        let text_surface = font
+            .render(&text)
+            .blended(color)
+            .map_err(|e| e.to_string())?;
+
+        // Calculates the vertical offset so that the text lines up with the grid
+        let offset = font.ascent() - (crate::app::pages::SQUARE_SIZE as i32 - 1);
+
+        let mut adjusted_surface = Surface::new(
+            text_surface.width(),
+            (font.height() - offset) as u32,
+            text_surface.pixel_format_enum(),
+        )?;
+
+        // Copy the surface but with its position adjusted
+        text_surface.blit(
+            Rect::new(
+                0,
+                offset,
+                text_surface.width(),
+                (font.height() - offset) as u32,
+            ),
+            &mut adjusted_surface,
+            None,
+        )?;
+
+        let size = adjusted_surface.size();
+
+        let texture = Texture::from_surface(&adjusted_surface, &self.tex_creator)
+            .map_err(|e| e.to_string())?;
+
+        match self.textures.get_mut(&id) {
+            Some(textures) => match texture_index {
+                Some(i) => {
+                    if i < textures.len() {
+                        textures[i] = texture
+                    } else {
+                        textures.push(texture)
+                    }
+                }
+                None => textures.push(texture),
+            },
+            None => {
                 self.textures.insert(id, vec![texture]);
             }
-            None => return Err("Error retrieving font.".to_string()),
         }
 
-        Ok(())
+        Ok(size)
+    }
+
+    pub fn text_overflow(
+        &self,
+        text: &String,
+        font_name: &String,
+        font_style: FontStyle,
+        point: u16,
+        max_width: u32,
+    ) -> Result<bool, String> {
+        // Get full font name with style
+        let mut font_name = font_name.clone();
+        if font_style.bits() & 1 == 1 {
+            font_name.push_str("-Bold");
+            if font_style.bits() & 2 == 2 {
+                font_name.push_str("Italic");
+            }
+        } else if font_style.bits() & 2 == 2 {
+            font_name.push_str("-Italic");
+        }
+        font_name.push('_');
+        font_name.push_str(&point.to_string());
+
+        let font = self
+            .fonts
+            .get(&font_name)
+            .ok_or_else(|| "Error retrieving font.".to_string())?;
+
+        let overflow = max_width as i32 - font.size_of(&text).map_err(|e| e.to_string())?.0 as i32;
+
+        Ok(overflow < 0)
     }
 
     // Clears canvas

@@ -13,6 +13,8 @@ use std::rc::Rc;
 use sdl2::clipboard::ClipboardUtil;
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, Mod, TextInputUtil};
+use sdl2::pixels::Color;
+use sdl2::ttf::FontStyle;
 
 #[derive(Clone, Copy)]
 pub enum ToolType {
@@ -89,7 +91,7 @@ impl Editor {
             },
             _ => (),
         }
-        self.text_tool.handle_event(event, renderer);
+        self.text_tool.handle_event(event, renderer)?;
 
         Ok(())
     }
@@ -97,9 +99,16 @@ impl Editor {
     pub fn handle_click(&mut self, page_square: PageSquare) {
         match self.tool_selected {
             ToolType::Text => {
+                let max_width = self.pages.page_width()
+                    - (page_square.position.x() - self.pages.position().x()) as u32;
+
                 let text_box = Rc::new(RefCell::new(TextBox::new(
                     page_square,
-                    "DejaVuSansMono".to_string(),
+                    "NotoSerif".to_string(),
+                    FontStyle::NORMAL,
+                    30,
+                    Color::BLACK,
+                    max_width,
                 )));
                 self.text_tool.start_input(Rc::clone(&text_box));
 
@@ -114,6 +123,14 @@ impl Editor {
             ToolType::Text => self.text_tool.paste(self.clipboard.clipboard_text()?),
             _ => (),
         }
+        Ok(())
+    }
+
+    pub fn draw_marks(&self, renderer: &mut Renderer) -> Result<(), String> {
+        for mark in self.marks.values() {
+            mark.borrow().draw(renderer)?;
+        }
+
         Ok(())
     }
 }

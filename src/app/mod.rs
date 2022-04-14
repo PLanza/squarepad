@@ -61,7 +61,7 @@ impl<'a> App<'a> {
 
         // String has format FontName-Style_Point
         let mut font_map = HashMap::new();
-        let points: Vec<u16> = vec![12, 16, 24, 32, 36, 48, 60, 72];
+        let points: Vec<u16> = vec![30, 32, 36, 48, 60, 72];
 
         // Load all the fonts in assets/fonts
         for entry in Path::new("assets/fonts")
@@ -211,6 +211,7 @@ impl<'a> App<'a> {
 
             renderer.clear();
             ac.editor.borrow().get_pages().draw(&mut renderer)?;
+            ac.editor.borrow().draw_marks(&mut renderer)?;
             ac.cursor.draw(&mut renderer)?;
 
             for menu in &ac.menus {
